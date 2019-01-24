@@ -1,0 +1,23 @@
+Package: AvantGardeDIA
+Title: Signal refinement for chromatographic-based peptide quantification by mass-spectrometry.
+Version: 0.0.0.9000
+Authors@R: person("Alvaro Sebastian", "Vaca Jacome", email = "svaca@broadinstitute.org", role = c("aut", "cre"))
+Description: Refines signals for chromatographic-based peptide quantification by mass-spectrometry, i.e. Data-Independent Acquisition (DIA) and Parallel Reaction Monitoring (PRM).
+Depends: R (>= 3.4.3)
+License: What license is it under?
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 6.0.1
+Imports: GA (>= 3.0.2),
+    doSNOW (>= 1.0.16),
+    snow (>= 0.4-2),
+    iterators (>= 1.0.9),
+    foreach (>= 1.4.4),
+    sqldf (>= 0.4-11),
+    RSQLite (>= 2.0),
+    gsubfn (>= 0.6-6),
+    proto (>= 1.0.0),
+    data.table (>= 1.10.4-3),
+    stringr (>= 1.3.0),
+    tidyr (>= 0.8.0),
+    dplyr (>= 0.7.4)

@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<views>
+  <view name="AvantGardeDIA_AvGScores" rowsource="pwiz.Skyline.Model.Databinding.Entities.PrecursorResult" sublist="">
+    <column name="Locator" />
+    <column name="PeptideResult.ResultFile.Replicate" />
+    <column name="&quot;annotation_AvG_Score&quot;" />
+    <column name="&quot;annotation_AvG_SpectralLibSim_Score&quot;" />
+    <column name="&quot;annotation_AvG_Similarity_Score&quot;" />
+    <column name="&quot;annotation_AvG_MPRA_Score&quot;" />
+    <column name="&quot;annotation_AvG_MassError_Score&quot;" />
+    <column name="AverageMassErrorPPM" />
+  </view>
+</views>

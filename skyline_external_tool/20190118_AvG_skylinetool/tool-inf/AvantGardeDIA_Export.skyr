@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<views>
+  <view name="AvantGardeDIA_Export" rowsource="pwiz.Skyline.Model.Databinding.Entities.Transition" sublist="Results!*">
+    <column name="Precursor.Peptide.Protein.Name" />
+    <column name="Precursor.Peptide.ModifiedSequence" />
+    <column name="Precursor.ModifiedSequence" />
+    <column name="Precursor.IsotopeLabelType" />
+    <column name="Precursor.IsDecoy" />
+    <column name="Precursor.Charge" />
+    <column name="Precursor.Mz" />
+    <column name="ProductCharge" />
+    <column name="ProductMz" />
+    <column name="FragmentIon" />
+    <column name="Locator" />
+    <column name="Quantitative" />
+    <column name="Results!*.Value.PrecursorResult.PeptideResult.ResultFile.FileName" />
+    <column name="Results!*.Value.PrecursorResult.LibraryDotProduct" />
+    <column name="Results!*.Value.PrecursorResult.MinStartTime" />
+    <column name="Results!*.Value.PrecursorResult.MaxEndTime" />
+    <column name="Results!*.Value.Area" />
+    <column name="LibraryIntensity" />
+    <column name="Results!*.Value.Chromatogram.InterpolatedData.Times" />
+    <column name="Results!*.Value.Chromatogram.InterpolatedData.Intensities" />
+    <column name="Results!*.Value.Chromatogram.InterpolatedData.MassErrors" />
+    <column name="Results!*.Value.PrecursorResult.Locator" />
+  </view>
+</views>

@@ -7,8 +7,10 @@ Avant-garde is a new tool to refine Data-Independent Acquisition (and Parallel R
 
 ## Getting Started
 
-Avant-garde is an R-based package that works with [Skyline](https://skyline.ms/project/home/software/Skyline/begin.view)'s reports.
-This github repository contains a **tutorial** decribing how to install, how to run the package as an External tool in [Skyline](https://skyline.ms/project/home/software/Skyline/begin.view) and how to import the results back into Skyline.
+* Avant-garde is an R-based package that works with [Skyline](https://skyline.ms/project/home/software/Skyline/begin.view)'s reports.
+* This github repository contains a [tutorial](HowToRunAvG_20190125.pdf) decribing how to install, how to run the package as an External tool in [Skyline](https://skyline.ms/project/home/software/Skyline/begin.view) and how to import the results back into Skyline.
+* An example data set can be found [here](https://drive.google.com/open?id=1JVoak2CY0lFZ61RWP-PfUk1vCJh5pHxS).
+
 
 
 ## Built With

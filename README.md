@@ -7,7 +7,7 @@ Avant-garde (AvG) is a new tool to refine Data-Independent Acquisition (and Para
 ## Getting Started
 
 * Avant-garde is an R-based package that works with [Skyline](https://skyline.ms/project/home/software/Skyline/begin.view)'s reports.
-* This github repository contains a [tutorial](HowToRunAvG_20190125.pdf) decribing how to install, how to run the package as an External tool in [Skyline](https://skyline.ms/project/home/software/Skyline/begin.view) and how to import the results back into Skyline.
+* This github repository contains a [tutorial](HowToRunAvG.pdf) decribing how to install, how to run the package as an External tool in [Skyline](https://skyline.ms/project/home/software/Skyline/begin.view) and how to import the results back into Skyline.
 * An example data set in Skyline can be found [here](https://drive.google.com/open?id=1JVoak2CY0lFZ61RWP-PfUk1vCJh5pHxS).
 
 ### Installation of the R package
@@ -32,7 +32,7 @@ install_github("SebVaca/Avant_garde_Publication", subdir="r_package/AvantGardeDI
 ### Installation of the Skyline external tool
 
 1. Download zip file [here](skyline_external_tool/20190118_AvG_skylinetool/20190118_AvG_skylinetool.zip).
-2. Follow instructions found in the [tutorial](HowToRunAvG_20190125.pdf).
+2. Follow instructions found in the [tutorial](HowToRunAvG.pdf).
 
 ## Built With
 
@@ -46,4 +46,4 @@ install_github("SebVaca/Avant_garde_Publication", subdir="r_package/AvantGardeDI
 
 ## Acknowledgments
 * [Skyline development team](https://skyline.ms/project/home/software/Skyline/begin.view)
-* **Nick Schulman** and **Michael MacCoss** - for their help integrating Avant-garde into Skyline.
+* **Nick Schulman**, **Brendan MacLean** and **Michael MacCoss** - for their help integrating Avant-garde into Skyline.

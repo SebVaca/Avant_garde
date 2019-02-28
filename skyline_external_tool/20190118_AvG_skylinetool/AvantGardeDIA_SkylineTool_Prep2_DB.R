@@ -42,7 +42,7 @@ dir.output=file.path(getwd(),Folder_1,Folder_2)
 Multifile_path=file.path(Output.file,"MultiFile")
 
 library(AvantGardeDIA)
-AvantGardeDIA::AvantGardeDIA_InChunks_DB(D.file.name = D.file.name,RefinementWorkflow = "GlobalRefinement",ClusterWorkflow = TRUE)
+AvantGardeDIA::AvantGardeDIA_InChunks_DB(D.file.name = D.file.name,RefinementWorkflow = "GlobalRefinement")
 
 
 rm(list=ls())

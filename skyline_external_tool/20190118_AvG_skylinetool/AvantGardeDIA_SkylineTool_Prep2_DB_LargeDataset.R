@@ -42,7 +42,7 @@ if(!file.exists("AvantGardeDIA_Export.csv")) {print("Please export AvantGardeDIA
 	Multifile_path=file.path(Output.file,"MultiFile")
 
 	library(AvantGardeDIA)
-	AvantGardeDIA::AvantGardeDIA_InChunks_DB(D.file.name = D.file.name,RefinementWorkflow = "GlobalRefinement",ClusterWorkflow = TRUE)
+	AvantGardeDIA::AvantGardeDIA_InChunks_DB(D.file.name = D.file.name,RefinementWorkflow = "GlobalRefinement")
 	}
 
 rm(list=ls())

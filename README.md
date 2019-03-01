@@ -10,8 +10,17 @@ Avant-garde (AvG) is a new tool to refine Data-Independent Acquisition (and Para
 * This github repository contains a [tutorial](HowToRunAvG.pdf) decribing how to install, how to run the package as an External tool in [Skyline](https://skyline.ms/project/home/software/Skyline/begin.view) and how to import the results back into Skyline.
 
 ### Installation of the Skyline external tool
+The installation can be done directly from Skyline.
+1. In Skyline go to **Tools**.
+2. Select **Tool Store**.
+3. Select **AvantGardeDIA**.
+4. Click **Install**.
 
-1. Download zip file [here](skyline_external_tool/AvG_skylineexternaltool/AvG_skylineexternaltool.zip).
+#####  Installation from the Skyline Tool Store.
+Download the zip file and follow instructions [here](https://skyline.ms/project/home/software/Skyline/tools/begin.view?).
+
+##### Installation from this repo
+1. Download the zip file [here](skyline_external_tool/AvG_skylineexternaltool/AvG_skylineexternaltool.zip).
 2. Follow instructions found in the [tutorial](HowToRunAvG.pdf).
 
 The installation should take 1 to 2 minutes depending on the system configuration. The Skyline External tool will automatically install the `Avant-garde` R package
@@ -74,7 +83,7 @@ dplyr (>= 0.7.4)
 ## Demo
 A demo data set can be found [here](https://drive.google.com/open?id=1JVoak2CY0lFZ61RWP-PfUk1vCJh5pHxS). 
 * The demo contains a Skyline file, instructions to run AvG on the demo and a folder containing the expected results.
-*  The expected results contain a Skyline file after the data curation by AvG.
+*  The expected results are in the `Demo_results.zip` file. It contains all the output reports and the Skyline file after the data curation by AvG.
 *  The demo requires Skyline (version >= 4.2.0) and R (version >=3.4.3). 
 *  The demo should take 6 minutes to run on a system with similar configuration as the following: Windows 7, Intel Core i7-3770 CPU @ 3.40Ghz 3.40 GHz, memory (RAM) 24Gb, 64-bit operating system.
 

@@ -1362,17 +1362,20 @@ Data.Loader_DB<-function(index,D){
   # Loading the data
   
   db <- dbConnect(SQLite(), dbname=paste0("DB_",Name_Tag,".sqlite"))
-  List_Analytes<-dbSendQuery(db, paste0("SELECT ID_analyte,PeptideModifiedSequence,PrecursorCharge,IsDecoy FROM MetaData_Analyte WHERE ID_Analyte=",index)) 
-  List_Analytes<-dbFetch(List_Analytes)%>% distinct()
-  QueryAnalyte<-paste0("SELECT * FROM MainTable WHERE ID_Analyte='",index,"' AND ",
-                       "PeptideModifiedSequence =", 
-                       "'",as.character(List_Analytes$PeptideModifiedSequence),"'",
-                       " AND PrecursorCharge==",
-                       "'",as.character(List_Analytes$PrecursorCharge),"'",
-                       " AND IsDecoy=",
-                       "'",as.character(List_Analytes$IsDecoy),"'")
-  Chrom.Analyte <- dbSendQuery(db, QueryAnalyte)
-  Chrom.Analyte <-data.frame(dbFetch(Chrom.Analyte))
+  # List_Analytes<-dbSendQuery(db, paste0("SELECT ID_analyte,PeptideModifiedSequence,PrecursorCharge,IsDecoy FROM MetaData_Analyte WHERE ID_Analyte=",index)) 
+  # List_Analytes<-dbFetch(List_Analytes)%>% distinct()
+  # QueryAnalyte<-paste0("SELECT * FROM MainTable WHERE ID_Analyte='",index,"' AND ",
+  #                      "PeptideModifiedSequence =", 
+  #                      "'",as.character(List_Analytes$PeptideModifiedSequence),"'",
+  #                      " AND PrecursorCharge==",
+  #                      "'",as.character(List_Analytes$PrecursorCharge),"'",
+  #                      " AND IsDecoy=",
+  #                      "'",as.character(List_Analytes$IsDecoy),"'")
+  # Chrom.Analyte <- dbSendQuery(db, QueryAnalyte)
+  # Chrom.Analyte <-data.frame(dbFetch(Chrom.Analyte))
+  
+  Chrom.Analyte =  dbGetQuery(db,paste0("select * from MainTable where ID_Analyte = ", index))
+  
   dbDisconnect(db)
  
   
@@ -2524,6 +2527,9 @@ AvantGardeDIA_InChunks_DB<-function(D.file.name,RefinementWorkflow){
   dbWriteTable(conn = db, name = "MetaData_TransitionsType", value = CurrentMetaData$M_TransitionsType, row.names = FALSE,append= TRUE)
   dbWriteTable(conn = db, name = "MetaData_Transitions", value = CurrentMetaData$M_Transitions, row.names = FALSE,append= TRUE)
   dbWriteTable(conn = db, name = "MetaData_PrecursorResults", value = CurrentMetaData$M_PrecursorResult, row.names = FALSE,append= TRUE)
+  
+  print("Indexing Database...")
+  dbGetQuery(conn = db,"CREATE INDEX index_Analyte ON MainTable (ID_Analyte)")
   
   dbDisconnect(db)
   print("Database: Done!")

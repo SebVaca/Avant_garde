@@ -41,14 +41,9 @@ RefinementWorkflow='GlobalRefinement'"
 
 write.table(A,file = "AvG_Params.R",row.names = F,col.names = F,quote = F)
 
-# Install AVG R Package
-Avg_RPackage_path<-file.path(args[5],"AvG_R_Package","AvantGardeDIA_0.0.0.9000.tar.gz")
+### Installing Latest version of the AvantGardeDIA R package
+install_Latest_AvG_RPackage<-file.path(args[5],"Update_AvG_RPackage.r")
+source(install_Latest_AvG_RPackage)
 
-## Install AvantGarde Package if it is not already installed
-a<-installed.packages()
-packages<-a[,1]
-if (!is.element("AvantGardeDIA",packages) || packageVersion("AvantGardeDIA") < "0.0.0.0" ){
-  install.packages(Avg_RPackage_path,repos = NULL)
-}
 
 print("Create AvantGardeDIA parameters file: Done!")

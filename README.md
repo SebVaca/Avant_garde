@@ -58,7 +58,7 @@ The `Avant-garde` package functions with the following software versions:
 
 ```
 Skyline (>= 4.2.0)
-R (>=3.4.3)
+R (>=3.5.2)
 ```
 
 ### R Package Versions
@@ -79,12 +79,15 @@ stringr (>= 1.3.0)
 tidyr (>= 0.8.0)
 dplyr (>= 0.7.4)
 ```
+## Support
+
+If you have a question about using AvG, or if you encounter a problem, you can post your questions [here](https://skyline.ms/project/home/software/Skyline/tools/Support/AvantGardeDIA/begin.view?).
 
 ## Demo
 A demo data set can be found [here](https://drive.google.com/open?id=1JVoak2CY0lFZ61RWP-PfUk1vCJh5pHxS). 
 * The demo contains a Skyline file, instructions to run AvG on the demo and a folder containing the expected results.
 *  The expected results are in the `Demo_results.zip` file. It contains all the output reports and the Skyline file after the data curation by AvG.
-*  The demo requires Skyline (version >= 4.2.0) and R (version >=3.4.3). 
+*  The demo requires Skyline (version >= 4.2.0) and R (version >=3.5.2). 
 *  The demo should take 6 minutes to run on a system with similar configuration as the following: Windows 7, Intel Core i7-3770 CPU @ 3.40Ghz 3.40 GHz, memory (RAM) 24Gb, 64-bit operating system.
 
 ## Authors

@@ -20,7 +20,7 @@ The installation can be done directly from Skyline.
 Download the zip file and follow instructions [here](https://skyline.ms/project/home/software/Skyline/tools/begin.view?).
 
 ##### Installation from this repo
-1. Download the zip file [here](skyline_external_tool/AvG_skylineexternaltool).
+1. Download the latest zip file [here](skyline_external_tool/AvG_skylineexternaltool).
 2. Follow instructions found in the [tutorial](HowToRunAvG.pdf).
 
 The installation should take 1 to 2 minutes depending on the system configuration. The Skyline External tool will automatically install the `Avant-garde` R package
@@ -28,7 +28,7 @@ The installation should take 1 to 2 minutes depending on the system configuratio
 ### Installation of the R package
 
 ##### From tar.gz file
-1. Download tar.gz file located [here](r_package).
+1. Download latest tar.gz file located [here](r_package).
 2. Run this code and point to the location of the tar.gz file.
 ```
 install.packages(pkgs = file.choose(), repos = NULL, type = "source")

@@ -1,6 +1,6 @@
 Package: AvantGardeDIA
 Title: Signal refinement for chromatographic-based peptide quantification by mass-spectrometry.
-Version: 0.0.1.0
+Version: 0.0.1.1
 Authors@R: person("Alvaro Sebastian", "Vaca Jacome", email = "svaca@broadinstitute.org", role = c("aut", "cre"))
 Description: Refines signals for chromatographic-based peptide quantification by mass-spectrometry, i.e. Data-Independent Acquisition (DIA) and Parallel Reaction Monitoring (PRM).
 Depends: R (>= 3.4.3)

@@ -1,6 +1,6 @@
 # Avant-garde
 
-Avant-garde (AvG) is a new tool to refine Data-Independent Acquisition (and Parallel Reaction Monitoring) by removing interfered transitions, adjusting integration boundaries and scoring peaks to control the FDR. Unlike other tools where MS runs are scored independently from each other, Avant-garde uses a novel data-driven scoring strategy. DIA signals are refined by learning from the data itself, using all measurements in all samples together to achieve the best optimization. Avant-garde evaluates the suitability of a peak to be used for quantification. It is capable of improving the selectivity, accuracy, and reproducibility of the quantification results in very complex biological matrices, reachng the same levels obtained with manual validation.
+Avant-garde (AvG) is a new tool to refine Data-Independent Acquisition (and Parallel Reaction Monitoring) by removing interfered transitions, adjusting integration boundaries and scoring peaks to control the FDR. Unlike other tools where MS runs are scored independently from each other, Avant-garde uses a novel data-driven scoring strategy. DIA signals are refined by learning from the data itself, using all measurements in all samples together to achieve the best optimization. Avant-garde evaluates the suitability of a peak to be used for quantification. It is capable of improving the selectivity, accuracy, and reproducibility of the quantification results in very complex biological matrices, reachng the same levels obtained with manual validation. AvG is described in detail in our [bioRxiv paper](https://doi.org/10.1101/565523). 
 
 ![AvG](http://drive.google.com/uc?export=view&id=1QOqZKxeFiQYlkPiX-07a4BMpROpuSmyh)
 
@@ -20,7 +20,7 @@ The installation can be done directly from Skyline.
 Download the zip file and follow instructions [here](https://skyline.ms/project/home/software/Skyline/tools/begin.view?).
 
 ##### Installation from this repo
-1. Download the latest zip file [here](skyline_external_tool/AvG_skylineexternaltool).
+1. Download the latest zip file [here](skyline_external_tool).
 2. Follow instructions found in the [tutorial](HowToRunAvG.pdf).
 
 The installation should take 1 to 2 minutes depending on the system configuration. The Skyline External tool will automatically install the `Avant-garde` R package

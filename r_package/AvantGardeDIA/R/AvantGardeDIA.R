@@ -1352,28 +1352,19 @@ New_Boundaries<-function(L,RowNum_at_max_Skor,Intensity_at_max_Skor){
 
 #' Data.Loader_DB
 #'
-#' This function is Data.Loader_DB
-#' @param Defaults
+#' This function loads the data for a given analyte (defined by its index) from the SQlite database. It creates several lists containing each different information.
+#' For each list, each element of the list corresponds to an MS run.
+#' 
+#' @param index int: analyte for which the data is extracted.
 #' @keywords AvantGardeDIA
 #' @export
 #' @examples
-#' Data.Loader_DB()
+#' Data.Loader_DB(index = 1)
 Data.Loader_DB<-function(index,D){
   # Loading the data
   
   db <- dbConnect(SQLite(), dbname=paste0("DB_",Name_Tag,".sqlite"))
-  # List_Analytes<-dbSendQuery(db, paste0("SELECT ID_analyte,PeptideModifiedSequence,PrecursorCharge,IsDecoy FROM MetaData_Analyte WHERE ID_Analyte=",index)) 
-  # List_Analytes<-dbFetch(List_Analytes)%>% distinct()
-  # QueryAnalyte<-paste0("SELECT * FROM MainTable WHERE ID_Analyte='",index,"' AND ",
-  #                      "PeptideModifiedSequence =", 
-  #                      "'",as.character(List_Analytes$PeptideModifiedSequence),"'",
-  #                      " AND PrecursorCharge==",
-  #                      "'",as.character(List_Analytes$PrecursorCharge),"'",
-  #                      " AND IsDecoy=",
-  #                      "'",as.character(List_Analytes$IsDecoy),"'")
-  # Chrom.Analyte <- dbSendQuery(db, QueryAnalyte)
-  # Chrom.Analyte <-data.frame(dbFetch(Chrom.Analyte))
-  
+
   Chrom.Analyte =  dbGetQuery(db,paste0("select * from MainTable where ID_Analyte = ", index))
   
   dbDisconnect(db)
@@ -1387,6 +1378,18 @@ Data.Loader_DB<-function(index,D){
     n=ifelse(round(as.numeric(m),5)>=round(as.numeric(m[1]),5) & round(as.numeric(m),5)<=round(as.numeric(m[2]),5),1,0)
     m=cbind(m,n)
     m=m[-c(1,2),]
+
+    # Find replicate where only a single data point was integrated.
+    o= as.numeric(m[,dim(m)[2]])  
+    if(sum(o)==1) {
+      # ^ If there is only one data point integarted then another one is added to 
+      # avoid the autamatic conversion of single-row dataframes into vectors.
+      r = ifelse(which(o==1)==1, which(o==1)+1, which(o==1)-1)
+      # ^ Thishandles the case where the single data point is the first row of the dataframe,
+      # then it adds the second row. If not, it adds the previous row.
+      m[r, dim(m)[2]] = 1
+    }
+
     colnames(m)=c("Times","IntegrationZone")
     m
   })
@@ -1396,12 +1399,11 @@ Data.Loader_DB<-function(index,D){
   Chrom_Full<-tapply(paste(Chrom.Analyte$ID_FragmentIon_charge,Chrom.Analyte$InterpolatedIntensities,sep=','), paste0("Rep_",Chrom.Analyte$ID_Rep," Analyte_",Chrom.Analyte$ID_Analyte," IsotopeLabelType_",Chrom.Analyte$IsotopeLabelType), function(x){
     m=strsplit(x, ',') %>% unlist() %>% gsub(pattern=' *', replacement='') %>% matrix(nrow=length(x), byrow=T)
     m=t(m)
-    #colnames(m) <- paste('Transition', 1:ncol(m), sep='.')
-    
+        
     colnames(m) <- m[1,]
     m=m[-1,]
     m= apply(m,2,as.numeric) 
-    #m=apply(m, 2, function(x2)x2/max(x2, na.rm=T))*100
+    
     row.names(m) <- paste('Point', 1:nrow(m), sep='.')
     m
   })
@@ -1411,8 +1413,8 @@ Data.Loader_DB<-function(index,D){
   
   Chrom<-Map(cbind, Chrom_Full,Boundaries)
   Chrom<-lapply(X = Chrom,FUN = function(W){
-    W=W[(W[,which(colnames(W)=="IntegrationZone")]==1),]
-    W=W[,1:(dim(W)[2]-2)]
+    W=W[(W[,which(colnames(W)=="IntegrationZone")]==1), ,drop=FALSE]
+    W=W[,1:(dim(W)[2]-2), drop=FALSE]
   })
   
   ##### Normalized Chromatograms
@@ -1434,19 +1436,9 @@ Data.Loader_DB<-function(index,D){
     m=m[-1,]
     m= apply(m,2,as.numeric) 
     row.names(m) <- paste('Point', 1:nrow(m), sep='.')
-    #m<-apply(m,2,mean)
     m
   })
-  # MassErrors_Full_2=MassErrors_Full
-  # #for(IndexRep in 1:length(names(MassErrors_Full))){
-  # NN<-names(MassErrors_Full_2[IndexRep])
-  # RepID=as.numeric(substr(x = NN,start = str_locate(NN,pattern = "Rep_")+4,stop=str_locate(NN,pattern = " ")-1))
-  # CorrFactor=as.numeric(CorrectMassErrorShift_Table %>% filter(ID_Rep==RepID) %>% select(Median_MassEror))
-  # MassErrors_Full_2[[IndexRep]]=apply(MassErrors_Full_2[[IndexRep]],2,function(x) {as.numeric(x)-CorrFactor})
-  # 
-  # 
-  #}
-  
+    
   MassErrors_Full<-rapply( MassErrors_Full, f=function(x) ifelse(is.nan(x),0,x), how="replace" )
   MassErrors_Full<-Map(cbind, MassErrors_Full,Boundaries)
   ### Do not change the order of these operations!!!
@@ -1469,16 +1461,9 @@ Data.Loader_DB<-function(index,D){
     })
     SkorMassErrors.IntegratedZone<-ifelse(as.numeric(meanMassErrors.IntegratedZone)<=MassError_Tolerance,1,ifelse(as.numeric(meanMassErrors.IntegratedZone)<=MassError_CutOff,MassError_CutOff/(MassError_CutOff-MassError_Tolerance)+as.numeric(meanMassErrors.IntegratedZone)*(1/(MassError_Tolerance-MassError_CutOff)),0))
     t(data.frame(meanMassErrors.IntegratedZone,SkorMassErrors.IntegratedZone))
-    
-    
   })  
   
-  # MassErrors<-lapply(MassErrors,FUN = function(L){
-  #   meanMassErrors.IntegratedZone<-apply(L,2,function(x){mean(abs(as.numeric(x)))})
-  #   SkorMassErrors.IntegratedZone<-ifelse(as.numeric(meanMassErrors.IntegratedZone)<=MassError_Tolerance,1,ifelse(as.numeric(meanMassErrors.IntegratedZone)<=MassError_CutOff,MassError_CutOff/(MassError_CutOff-MassError_Tolerance)+as.numeric(meanMassErrors.IntegratedZone)*(1/(MassError_Tolerance-MassError_CutOff)),0))
-  #   t(data.frame(meanMassErrors.IntegratedZone,SkorMassErrors.IntegratedZone))
-  # })
-  
+   
   ## Library Intensities
   SpctLib <- Chrom.Analyte %>% 
     select(Area,LibraryIntensity, ID_Rep,ID_Analyte,IsotopeLabelType,ID_FragmentIon_charge) %>% 
@@ -1495,21 +1480,28 @@ Data.Loader_DB<-function(index,D){
   
   ## DIA Area  per transition
   
-  Transition.Area<- Chrom.Analyte %>% select(ID_FragmentIon_charge,Area,ID_Rep,ID_Analyte,IsotopeLabelType) %>% 
+  Transition.Area<- Chrom.Analyte %>%
+    select(ID_FragmentIon_charge,Area,ID_Rep,ID_Analyte,IsotopeLabelType) %>% 
+    mutate(Area = as.numeric(Area)) %>%
     distinct %>%
     group_by(ID_Rep,ID_Analyte,IsotopeLabelType) %>%
     spread(key = ID_FragmentIon_charge,value = Area)  %>% ungroup### Normalized DIA.Areas
+  
   Transition.Area<- split(as.data.frame(Transition.Area,stringsAsFactors = F), f =paste0("Analyte_",Transition.Area$ID_Analyte," IsotopeLabelType_",Transition.Area$IsotopeLabelType), drop=FALSE) 
-  Transition.Area<- lapply(Transition.Area,FUN = function(L) {L=L %>% select(-ID_Analyte,-IsotopeLabelType) %>% ungroup
-  row.names(L)=paste0("Rep_",L$ID_Rep)
-  L=L %>% select(-ID_Rep)
-  return(L)})
+  
+  Transition.Area<- lapply(Transition.Area,FUN = function(L) {
+    L=L %>%
+    select(-ID_Analyte,-IsotopeLabelType) %>%
+    ungroup
+
+    row.names(L)=paste0("Rep_",L$ID_Rep)
+
+    L=L %>%select(-ID_Rep)
+    return(L)})
   
   MPRA.MeanArea<-lapply(data.matrix(Transition.Area), FUN = function(L) {
     P=data.frame(t(apply(L,2, mean, na.rm=T)),stringsAsFactors = F)
     names(P)=gsub(names(P),pattern = "X",replacement = "")
-    #SummedTotalArea=apply(P,1,sum)
-    #P=cbind(P,SummedTotalArea=SummedTotalArea)
     row.names(P)=c("Mean.Area")
     return(P)})
   
@@ -1526,12 +1518,10 @@ Data.Loader_DB<-function(index,D){
   
   
   ### Chromatogram_Score
-  #ChromScore=list()
   for(i in 1:length(names(Chrom_Full))){
     Chrom_Full[[i]]=rbind(MPRA.MeanArea[[1]],Transition.Lib.Intensity,Chrom_Full[[i]])
   }
-  #names(Chrom_Full)<-names(Chrom_Full)
-  
+    
   return(list(Chrom.Analyte=Chrom.Analyte,
               Boundaries=Boundaries,
               Chrom_Full=Chrom_Full,

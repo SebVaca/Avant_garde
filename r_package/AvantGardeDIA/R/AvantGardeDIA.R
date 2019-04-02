@@ -268,7 +268,10 @@ AvG_writeParamsUsed<-function(SubSetOfParams){
     if(RefinementWorkflow=="TransitionRefinement") {"TR"} else{
       if(RefinementWorkflow=="PeakBoundariesRefinement") {"PB"} else{
         if(RefinementWorkflow=="OnlyScoring") {"NO"}
-      }}} 
+      }}}
+  
+  
+  
   if(SubSetOfParams=="DB"){
     write.csv(data.frame(Name_Tag,
                          RefinementTAG,
@@ -1336,19 +1339,30 @@ New_Boundaries<-function(L,RowNum_at_max_Skor,Intensity_at_max_Skor){
   j=RowNum_at_max_Skor
   
   while(h>1 & w[h]/w[RowNum_at_max_Skor]>=0.05 & v[[h]]>0.25 & h<length(w)-1){
-    #while(h>1 & w[h]/w[RowNum_at_max_Skor]>=0.05 & v[h]/v[RowNum_at_max_Skor]>=0.05 ){
     h=h-1
-    #print(h)
   }
   while(j>1 & j<(length(w)-1) & w[[j]]/w[[RowNum_at_max_Skor]]>=0.05 & v[j]>0.25){
-    #while(j<(length(w)-1) & w[[j]]/w[[RowNum_at_max_Skor]]>=0.05 & v[j]/v[RowNum_at_max_Skor]>=0.05 ){
     j=j+1
-    #print(j)
   }
-  if((j-h+1)==1) {h=h-1} #avoid any point that only has one integration point
-  while((j-h+1)<8 & h>1 & h<length(w)-1 &j>1 & j<(length(w)-1)){if(w[[j]]>=w[[h]]){h=h-1} else {j=j+1}} ## At least 8 points chosing the ones with the lowest intensity
+  if((j-h+1)==1) {#avoid any point that only has one integration point
+    if(h==1){j=j+1} else {h=h-1} # prevent having h <1, this would produce and error when calling for the hth row of the dataframe.
+  } 
+  while((j-h+1)<8 & # we need at least 8 points
+        h>=1 & #the left side integration boundary is at least the first chromatographic point
+        h<=(length(w)-1) & # the left integration point is not the last chromatographic point
+        j>1 & # the right side integration boundary is not the first chromatographic point
+        j<=length(w)# the right side integration boundary is lower than the last chromatographic point
+  ){
+    if(w[[j]]>=w[[h]]){
+      if(h==1){j=j+1} else {h=h-1} # prevent having h <1, this would produce and error when calling for the hth row of the dataframe.
+      
+    } else {
+      if(j==length(w)){h=h-1} else {j=j+1} } # prevent having j> length(w), this would produce and error when calling a rownumber larger than the dimension of the dataframe.
+  } ## At least 8 points chosing the ones with the lowest intensity
+  
   New_Boundaries=data.frame(left=L[h,]$Times,right=L[j,]$Times,numPoints=(j-h+1))
-  return(New_Boundaries)}
+  return(New_Boundaries)
+}
 
 #' Data.Loader_DB
 #'

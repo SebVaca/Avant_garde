@@ -1,4 +1,4 @@
-Latest_version = "0.0.1.1"
+Latest_version = "0.0.1.2"
 
 # Install AVG R Package
 Avg_RPackage_path<-file.path(args[5],"AvG_R_Package", paste0("AvantGardeDIA_", Latest_version,".tar.gz"))

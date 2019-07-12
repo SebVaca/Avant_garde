@@ -222,7 +222,7 @@ MetaDataLibraryConcatenator<-function(MetaData1,MetaData2){
 #' @examples
 #' ReadFileInChunks_Format_And_Filter()
 ReadFileInChunks_Format_And_Filter<-function(D.file.name,ColumnNames,PreviousMetaData,Skip,is.FirstIteration){
-  D<-data.frame(fread(file = D.file.name,header = F,stringsAsFactors = FALSE, na.strings = c("#N/A","NA","NaN"),skip=Skip,nrows = ReadNumberOfLines,col.names = ColumnNames))
+  D<-data.frame(fread(file = D.file.name,header = F,stringsAsFactors = FALSE, na.strings = c("#N/A","NA","NaN"),skip=Skip,nrows = ReadNumberOfLines,col.names = ColumnNames,sep = ","))
   ChunkLastRowNumber=max(as.numeric(row.names(D)))
   Stop.Condition=!ChunkLastRowNumber==ReadNumberOfLines
   
@@ -793,7 +793,7 @@ MassError.Score.Fitness_informsMPRA<- function(MassErrors, y){
   Score=mean(A,na.rm = T)
   
   Best_reps= (data.frame(A) %>% mutate(Reps=row.names(.)) %>%
-                top_n(A,n = floor(dim(A)[1]/4)) %>% select(Reps))[,1]
+                top_n(A,n = floor(dim(.)[1]/4)) %>% select(Reps))[,1]
   return(list(Score=Score,Best_reps_MassErrors=Best_reps))}
 
 #' MassError.Score.Report
@@ -814,7 +814,7 @@ MassError.Score.Report<- function(MassErrors, y){
   A=do.call(rbind,A)
   
   Best_reps= (data.frame(A) %>% mutate(Reps=row.names(.)) %>%
-                top_n(A,n = floor(dim(A)[1]/4)) %>% select(Reps))[,1]
+                top_n(A,n = floor(dim(.)[1]/4)) %>% select(Reps))[,1]
   return(list(Report=A,Best_reps_MassErrors=Best_reps))}
 
 #' Transition.Remover

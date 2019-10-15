@@ -8,6 +8,8 @@ library(foreach)
 library(doSNOW)
 library(GA, quietly = T)
 library(parallel)
+library(readr)
+
 
 args <- commandArgs()
 

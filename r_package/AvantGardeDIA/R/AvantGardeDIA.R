@@ -9,16 +9,16 @@
 #' @examples
 AvantGardeDIA_CreateParamsFile<-function(){
   dir.create(file.path(getwd(),"AvantGardeDIA"),showWarnings = F)
-
+  
   # Create AvantGardeDIA Parameters file
   A<-"Name_Tag='Name_Tag' #Short Name that will be added to all output files. (Must be in quotes)
-
+  
   # I- DataFormating Parameters
   MinimalInitialNumberOfTransitions_Filter=5 # Peptides with less than N transitions will be removed and not included in the SQLite Database
   RemoveTransitionBelowOrdinal_Filter=3  # Transition ordinal below or equal to this value will be removed (for example if Max_TransitionIonOrdinal=3 transitions b1,b2,b3,y1,y2,y3 are removed) 
   RemoveSharedTransitionsBetweenLightAndHeavy_Filter=TRUE # Should be TRUE for DIA,FALSE for PRM.
   ReadNumberOfLines=20000 # The CSV file is read in chunks. This parameter sets the number of lines in each chunk.
-
+  
   # II- Optimization Parameters
   NonZeroBaselineChromatogram=FALSE # TRUE for data having high noise baseline level (e.g. SWATH data on Q-TOF), FALSE (noise-reduced data, e.g demultiplexed Overlap DIA Data acquired on Q-Exactive series)
   MinimalNumberOfTransitionsAfterOptimization=4 # The optimization will find the best solution that will have at least this number of transitions.
@@ -33,7 +33,7 @@ AvantGardeDIA_CreateParamsFile<-function(){
   MinimalNumberOfConsecutivePoints=3 # Minimal number of consecutive points above the limit of noise to consider a signal as a potential peptide.
   MinimalIntensityPercentagePerTransition=3 # Minimal percentage of the maximum intensity of each transtion below which any point is no longer considered.
   UseHeavyPeakBoundariesForLight=FALSE # Use the heavy peptide peak boundaries for the light peptides.
-
+  
   ## Folders
   Folder_1='DataFormatting'
   Output.file=file.path(getwd(),Folder_1)
@@ -42,7 +42,7 @@ AvantGardeDIA_CreateParamsFile<-function(){
   dir.output=file.path(getwd(),Folder_1,Folder_2)
   Multifile_path=file.path(Output.file,'MultiFile')
   RefinementWorkflow='GlobalRefinement'"
-
+  
   write.table(A,file = file.path(getwd(),"AvantGardeDIA","AvG_Params.R"),row.names = F,col.names = F,quote = F)
   print("Create AvantGardeDIA parameters file: Done!")
 }
@@ -117,53 +117,53 @@ Filter_Na_Shared_Or_LowMassTransitions<-function(D1){
   if (dim(A1)[1]>=1) {
     D1<-D1 %>% left_join(A1, by = c("ID_Analyte", "ID_FragmentIon_charge")) %>% filter(is.na(Remove)) %>% select(-Remove)
   }
-
+  
   if(RemoveSharedTransitionsBetweenLightAndHeavy_Filter==TRUE){
-      ## Remove shared transitions between light and heavy (b ions if the labeling is in C-ter)
-      RemoveSharedTransitionsLightAndHeavy<-D1 %>% select(ProteinName,PeptideModifiedSequence,PrecursorCharge,ProductMz,ProductCharge,FragmentIon,IsotopeLabelType,IsDecoy) %>%
-        distinct() %>%
-        group_by(ProteinName,PeptideModifiedSequence,PrecursorCharge,ProductMz,IsDecoy) %>%
-        tally %>%
-        filter(n>1) %>% ungroup %>%
-        select(ProteinName,PeptideModifiedSequence,PrecursorCharge,ProductMz,IsDecoy) %>%
-        mutate(Remove="Remove")
-      
-      ## Filter less than MinimalInitialNumberOfTransitions_Filter transitions
-      FilterLessThanNTrans<-D1 %>%
-        select(ProteinName,PeptideModifiedSequence,PrecursorCharge,IsotopeLabelType,FragmentIon,ProductCharge,IsDecoy) %>%
-        distinct()  %>%
-        group_by(ProteinName,PeptideModifiedSequence,PrecursorCharge,IsotopeLabelType,IsDecoy) %>%
-        tally() %>%
-        mutate(Keep=ifelse(n>=MinimalInitialNumberOfTransitions_Filter,"keep","DoNOTKeep")) %>%
-        select(ProteinName,PeptideModifiedSequence,PrecursorCharge,IsotopeLabelType,IsDecoy,Keep)
-      
-      
-      D1<- D1 %>% left_join(RemoveSharedTransitionsLightAndHeavy,by=c("ProteinName","PeptideModifiedSequence","PrecursorCharge","ProductMz","IsDecoy")) %>%
-        filter(is.na(Remove)) %>%
-        select(-Remove) %>%
-        left_join(data.frame(FilterLessThanNTrans),by = c("ProteinName","PeptideModifiedSequence", "PrecursorCharge", "IsotopeLabelType","IsDecoy")) %>%
-        filter(Keep=="keep") %>% select(-Keep)%>%
-        #select(ID_Analyte,IsotopeLabelType,ID_FragmentIon_charge,ID_Rep,InterpolatedTimes,
-        #       InterpolatedIntensities,InterpolatedMassErrors,Area,LibraryIntensity,MinStartTime,MaxEndTime)%>%
-        arrange(ID_Analyte,ID_FragmentIon_charge,ID_Rep)
+    ## Remove shared transitions between light and heavy (b ions if the labeling is in C-ter)
+    RemoveSharedTransitionsLightAndHeavy<-D1 %>% select(ProteinName,PeptideModifiedSequence,PrecursorCharge,ProductMz,ProductCharge,FragmentIon,IsotopeLabelType,IsDecoy) %>%
+      distinct() %>%
+      group_by(ProteinName,PeptideModifiedSequence,PrecursorCharge,ProductMz,IsDecoy) %>%
+      tally %>%
+      filter(n>1) %>% ungroup %>%
+      select(ProteinName,PeptideModifiedSequence,PrecursorCharge,ProductMz,IsDecoy) %>%
+      mutate(Remove="Remove")
+    
+    ## Filter less than MinimalInitialNumberOfTransitions_Filter transitions
+    FilterLessThanNTrans<-D1 %>%
+      select(ProteinName,PeptideModifiedSequence,PrecursorCharge,IsotopeLabelType,FragmentIon,ProductCharge,IsDecoy) %>%
+      distinct()  %>%
+      group_by(ProteinName,PeptideModifiedSequence,PrecursorCharge,IsotopeLabelType,IsDecoy) %>%
+      tally() %>%
+      mutate(Keep=ifelse(n>=MinimalInitialNumberOfTransitions_Filter,"keep","DoNOTKeep")) %>%
+      select(ProteinName,PeptideModifiedSequence,PrecursorCharge,IsotopeLabelType,IsDecoy,Keep)
+    
+    
+    D1<- D1 %>% left_join(RemoveSharedTransitionsLightAndHeavy,by=c("ProteinName","PeptideModifiedSequence","PrecursorCharge","ProductMz","IsDecoy")) %>%
+      filter(is.na(Remove)) %>%
+      select(-Remove) %>%
+      left_join(data.frame(FilterLessThanNTrans),by = c("ProteinName","PeptideModifiedSequence", "PrecursorCharge", "IsotopeLabelType","IsDecoy")) %>%
+      filter(Keep=="keep") %>% select(-Keep)%>%
+      #select(ID_Analyte,IsotopeLabelType,ID_FragmentIon_charge,ID_Rep,InterpolatedTimes,
+      #       InterpolatedIntensities,InterpolatedMassErrors,Area,LibraryIntensity,MinStartTime,MaxEndTime)%>%
+      arrange(ID_Analyte,ID_FragmentIon_charge,ID_Rep)
   } else {
     
-      ## Filter less than MinimalInitialNumberOfTransitions_Filter transitions
-      FilterLessThanNTrans<-D1 %>%
-        select(ProteinName,PeptideModifiedSequence,PrecursorCharge,IsotopeLabelType,FragmentIon,ProductCharge,IsDecoy) %>%
-        distinct()  %>%
-        group_by(ProteinName,PeptideModifiedSequence,PrecursorCharge,IsotopeLabelType,IsDecoy) %>%
-        tally() %>%
-        mutate(Keep=ifelse(n>=MinimalInitialNumberOfTransitions_Filter,"keep","DoNOTKeep")) %>%
-        select(ProteinName,PeptideModifiedSequence,PrecursorCharge,IsotopeLabelType,IsDecoy,Keep)
-      
-      D1<- D1 %>%
-        left_join(data.frame(FilterLessThanNTrans),by = c("ProteinName","PeptideModifiedSequence", "PrecursorCharge", "IsotopeLabelType","IsDecoy")) %>%
-        filter(Keep=="keep") %>% select(-Keep)%>%
-        #select(ID_Analyte,IsotopeLabelType,ID_FragmentIon_charge,ID_Rep,InterpolatedTimes,
-        #       InterpolatedIntensities,InterpolatedMassErrors,Area,LibraryIntensity,MinStartTime,MaxEndTime)%>%
-        arrange(ID_Analyte,ID_FragmentIon_charge,ID_Rep)
-    }
+    ## Filter less than MinimalInitialNumberOfTransitions_Filter transitions
+    FilterLessThanNTrans<-D1 %>%
+      select(ProteinName,PeptideModifiedSequence,PrecursorCharge,IsotopeLabelType,FragmentIon,ProductCharge,IsDecoy) %>%
+      distinct()  %>%
+      group_by(ProteinName,PeptideModifiedSequence,PrecursorCharge,IsotopeLabelType,IsDecoy) %>%
+      tally() %>%
+      mutate(Keep=ifelse(n>=MinimalInitialNumberOfTransitions_Filter,"keep","DoNOTKeep")) %>%
+      select(ProteinName,PeptideModifiedSequence,PrecursorCharge,IsotopeLabelType,IsDecoy,Keep)
+    
+    D1<- D1 %>%
+      left_join(data.frame(FilterLessThanNTrans),by = c("ProteinName","PeptideModifiedSequence", "PrecursorCharge", "IsotopeLabelType","IsDecoy")) %>%
+      filter(Keep=="keep") %>% select(-Keep)%>%
+      #select(ID_Analyte,IsotopeLabelType,ID_FragmentIon_charge,ID_Rep,InterpolatedTimes,
+      #       InterpolatedIntensities,InterpolatedMassErrors,Area,LibraryIntensity,MinStartTime,MaxEndTime)%>%
+      arrange(ID_Analyte,ID_FragmentIon_charge,ID_Rep)
+  }
   
   return(D1)}
 
@@ -222,7 +222,12 @@ MetaDataLibraryConcatenator<-function(MetaData1,MetaData2){
 #' @examples
 #' ReadFileInChunks_Format_And_Filter()
 ReadFileInChunks_Format_And_Filter<-function(D.file.name,ColumnNames,PreviousMetaData,Skip,is.FirstIteration){
-  D<-data.frame(fread(file = D.file.name,header = F,stringsAsFactors = FALSE, na.strings = c("#N/A","NA","NaN"),skip=Skip,nrows = ReadNumberOfLines,col.names = ColumnNames,sep = ","))
+  # D<-data.frame(fread(file = D.file.name,header = F,stringsAsFactors = FALSE, na.strings = c("#N/A","NA","NaN"),skip=Skip,nrows = ReadNumberOfLines,col.names = ColumnNames,sep = ","))
+  
+  D<-data.frame(read_skyline_report_chunk(csv_file_path = D.file.name,
+                                          skip_rows = Skip,
+                                          n_rows = ReadNumberOfLines,
+                                          column_names = ColumnNames))
   ChunkLastRowNumber=max(as.numeric(row.names(D)))
   Stop.Condition=!ChunkLastRowNumber==ReadNumberOfLines
   
@@ -991,9 +996,9 @@ GA.Fitness<-function(y,Norm.Chrom,Transition.Area,Transition.Rank,MassErrors){
 #' num.trans.To.Remove.Fun()
 num.trans.To.Remove.Fun<-function(num_transX){
   if(num_transX<=5) {N=num_transX} else
-  if(num_transX<=12) {N=ifelse((num_transX-1)<5,5,(num_transX-1))} else
-    if(num_transX<20) {N=ifelse(round(num_transX*0.75,digits = 0)<10,5,round(num_transX*0.75,digits = 0))} else 
-    {N=ifelse(round(num_transX*0.6,digits = 0)<5,5,round(num_transX*0.6,digits = 0))}
+    if(num_transX<=12) {N=ifelse((num_transX-1)<5,5,(num_transX-1))} else
+      if(num_transX<20) {N=ifelse(round(num_transX*0.75,digits = 0)<10,5,round(num_transX*0.75,digits = 0))} else 
+      {N=ifelse(round(num_transX*0.6,digits = 0)<5,5,round(num_transX*0.6,digits = 0))}
   return(num_transX-N)
 }
 
@@ -1240,15 +1245,15 @@ Chromatographic.IsPotentialPeak<-function(list,MinimalNumberOfConsecutivePoints)
     L22<-apply(L2,2,function(o){ ## Find regions where the intensity of N transitions is above 0 for 5 consecutive points
       M0<-which(o==0)
       if(!length(M0)==0){
-          M<-data.frame(PointsZero=M0,NextPointZero=c(M0[-c(1)],length(o))) %>% mutate(Peak=NextPointZero-PointsZero-1) %>% filter(Peak>=MinimalNumberOfConsecutivePoints) 
-          M<-apply(M,1,function(x){paste(x[1]:x[2], collapse = "_")})
-          M<-paste(M, collapse = "_")
-          M<-strsplit(as.character(M), "_")
-          M<-c(as.numeric(M[[1]]))
-          M<-M[!M %in% M0]
-          
-          p<-rep(0,length(o))
-          p[M]<-1} else{
+        M<-data.frame(PointsZero=M0,NextPointZero=c(M0[-c(1)],length(o))) %>% mutate(Peak=NextPointZero-PointsZero-1) %>% filter(Peak>=MinimalNumberOfConsecutivePoints) 
+        M<-apply(M,1,function(x){paste(x[1]:x[2], collapse = "_")})
+        M<-paste(M, collapse = "_")
+        M<-strsplit(as.character(M), "_")
+        M<-c(as.numeric(M[[1]]))
+        M<-M[!M %in% M0]
+        
+        p<-rep(0,length(o))
+        p[M]<-1} else{
           p<-rep(1,length(o))}
       
       p=matrix(p)
@@ -1378,11 +1383,11 @@ Data.Loader_DB<-function(index,D){
   # Loading the data
   
   db <- dbConnect(SQLite(), dbname=paste0("DB_",Name_Tag,".sqlite"))
-
+  
   Chrom.Analyte =  dbGetQuery(db,paste0("select * from MainTable where ID_Analyte = ", index))
   
   dbDisconnect(db)
- 
+  
   
   ### Boundaries
   Boundaries<-tapply(paste(Chrom.Analyte$ID_FragmentIon_charge,Chrom.Analyte$MinStartTime,Chrom.Analyte$MaxEndTime,Chrom.Analyte$InterpolatedTimes,sep=','), paste0("Rep_",Chrom.Analyte$ID_Rep," Analyte_",Chrom.Analyte$ID_Analyte," IsotopeLabelType_",Chrom.Analyte$IsotopeLabelType), function(x){
@@ -1392,7 +1397,7 @@ Data.Loader_DB<-function(index,D){
     n=ifelse(round(as.numeric(m),5)>=round(as.numeric(m[1]),5) & round(as.numeric(m),5)<=round(as.numeric(m[2]),5),1,0)
     m=cbind(m,n)
     m=m[-c(1,2),]
-
+    
     # Find replicate where only a single data point was integrated.
     o= as.numeric(m[,dim(m)[2]])  
     if(sum(o)==1) {
@@ -1403,7 +1408,7 @@ Data.Loader_DB<-function(index,D){
       # then it adds the second row. If not, it adds the previous row.
       m[r, dim(m)[2]] = 1
     }
-
+    
     colnames(m)=c("Times","IntegrationZone")
     m
   })
@@ -1413,7 +1418,7 @@ Data.Loader_DB<-function(index,D){
   Chrom_Full<-tapply(paste(Chrom.Analyte$ID_FragmentIon_charge,Chrom.Analyte$InterpolatedIntensities,sep=','), paste0("Rep_",Chrom.Analyte$ID_Rep," Analyte_",Chrom.Analyte$ID_Analyte," IsotopeLabelType_",Chrom.Analyte$IsotopeLabelType), function(x){
     m=strsplit(x, ',') %>% unlist() %>% gsub(pattern=' *', replacement='') %>% matrix(nrow=length(x), byrow=T)
     m=t(m)
-        
+    
     colnames(m) <- m[1,]
     m=m[-1,]
     m= apply(m,2,as.numeric) 
@@ -1452,7 +1457,7 @@ Data.Loader_DB<-function(index,D){
     row.names(m) <- paste('Point', 1:nrow(m), sep='.')
     m
   })
-    
+  
   MassErrors_Full<-rapply( MassErrors_Full, f=function(x) ifelse(is.nan(x),0,x), how="replace" )
   MassErrors_Full<-Map(cbind, MassErrors_Full,Boundaries)
   ### Do not change the order of these operations!!!
@@ -1477,7 +1482,7 @@ Data.Loader_DB<-function(index,D){
     t(data.frame(meanMassErrors.IntegratedZone,SkorMassErrors.IntegratedZone))
   })  
   
-   
+  
   ## Library Intensities
   SpctLib <- Chrom.Analyte %>% 
     select(Area,LibraryIntensity, ID_Rep,ID_Analyte,IsotopeLabelType,ID_FragmentIon_charge) %>% 
@@ -1505,11 +1510,11 @@ Data.Loader_DB<-function(index,D){
   
   Transition.Area<- lapply(Transition.Area,FUN = function(L) {
     L=L %>%
-    select(-ID_Analyte,-IsotopeLabelType) %>%
-    ungroup
-
+      select(-ID_Analyte,-IsotopeLabelType) %>%
+      ungroup
+    
     row.names(L)=paste0("Rep_",L$ID_Rep)
-
+    
     L=L %>%select(-ID_Rep)
     return(L)})
   
@@ -1535,7 +1540,7 @@ Data.Loader_DB<-function(index,D){
   for(i in 1:length(names(Chrom_Full))){
     Chrom_Full[[i]]=rbind(MPRA.MeanArea[[1]],Transition.Lib.Intensity,Chrom_Full[[i]])
   }
-    
+  
   return(list(Chrom.Analyte=Chrom.Analyte,
               Boundaries=Boundaries,
               Chrom_Full=Chrom_Full,
@@ -1565,153 +1570,153 @@ Run_Transition_Refinment_Tool<-function(Chrom.Analyte,Norm.Chrom,MassErrors,Tran
   
   if (num_trans<MinimalNumberOfTransitionsAfterOptimization) {
     if (KeepPeptidesWithLowerNumberOfTransitions==TRUE) {
-            Report.Replicate.Values<-Report.Replicate_informedMPRA(Norm.ChromX = Norm.Chrom,Transition.Area=Transition.Area,MassErrorsX = MassErrors,y = rep(1,num_trans), Comment ="aa-NonOptimized_LowerNumOfMinTrans")
-    
-            Report.Transition.Values<-Report.Transition(Chrom.AnalyteX = Chrom.Analyte,Norm.ChromX = Norm.Chrom,y = rep(1,num_trans))
-    
-    return(list(Report.Transition.Values=Report.Transition.Values,
-                Report.Replicate.Values=Report.Replicate.Values))
+      Report.Replicate.Values<-Report.Replicate_informedMPRA(Norm.ChromX = Norm.Chrom,Transition.Area=Transition.Area,MassErrorsX = MassErrors,y = rep(1,num_trans), Comment ="aa-NonOptimized_LowerNumOfMinTrans")
+      
+      Report.Transition.Values<-Report.Transition(Chrom.AnalyteX = Chrom.Analyte,Norm.ChromX = Norm.Chrom,y = rep(1,num_trans))
+      
+      return(list(Report.Transition.Values=Report.Transition.Values,
+                  Report.Replicate.Values=Report.Replicate.Values))
     } else{return(0)}
   } else{
-  
-  num_rep=dim(Transition.Area[[1]])[1]-2
-  sug=rep(1,num_trans)
-  Trans.Vector=colnames(Norm.Chrom[[1]])
-  
-  #     Functions
-  
-  Trans.Classified<-Transition.Classifier(Norm.Chrom = Norm.Chrom,Transition.Area = Transition.Area,num_trans = num_trans,Transition.Rank = Transition.Rank)
-  sug.matrix<-Sug.Matrix.FUN(Trans.Classified,Trans.Vector = Trans.Vector)
-  
-  
-  
-  Transitions.To.Remove= data.frame(
-    Trans.Classified %>% 
-      select(ID_FragmentIon_charge,Rank.The25quartile.Initial.SimilarityScore,Rank.The25quartile.Initial.Area,Rank) %>%
-      arrange(-Rank.The25quartile.Initial.SimilarityScore,-Rank) %>%
-      select(ID_FragmentIon_charge))[c(0:num.trans.To.Remove.Fun(num_trans)),]
-  ### Remove transition if the median mass error is higher than the mass error cutoff
-  Transitions_To_Remove_Mass_Error<-data.frame(rbindlist(lapply(MassErrors,FUN = function(L){data.frame(Transitions=colnames(L),SkorMassErrors_IntegratedZone=L[1,])})))
-  
-  Transitions_To_Remove_Mass_Error<-Transitions_To_Remove_Mass_Error %>% group_by(Transitions) %>%
-    summarise(median_error=median(SkorMassErrors_IntegratedZone,na.rm = T)) %>%
-    arrange(-median_error) %>%
-    filter(median_error>=MassError_CutOff) %>%
-    select(Transitions) %>%
-    mutate(Transitions=as.character(Transitions))
-  
-  Transitions.To.Remove<-unique(c(Transitions.To.Remove,Transitions_To_Remove_Mass_Error$Transitions))
-  #
-  
-  
-  Transitions.To.Remove=sapply(Trans.Vector,function(x) ifelse(x %in% Transitions.To.Remove,0,1))
-  
-  
-  
-  
-  Trans.Classified_filtered<-Trans.Classified[Trans.Classified$ID_FragmentIon_charge %in% names(Transitions.To.Remove[Transitions.To.Remove==1]),]
-  Trans.Vector2= names(Transitions.To.Remove[Transitions.To.Remove==1])
-  num_trans2=length(Trans.Vector2)
-  
-  
-  #########  New dataset without the worst transitions
-  
-  Norm.Chrom2<-Transition.Remover(Norm.Chrom,Transitions.To.Remove)
-  
-  Transition.Area2<-Transition.Remover(Transition.Area,Transitions.To.Remove)
-  Transition.Area2=lapply(Transition.Area2,FUN = function(L){ MAX.L=apply(L,1,max,na.rm =T);SUM.L=apply(L,1,sum,na.rm =T); L=cbind(L,Total.To.Max.Ratio=SUM.L/MAX.L)})
-  
-  Transition.Rank2=t(matrix(Transition.Rank[which(Transitions.To.Remove==1)]))
-  colnames(Transition.Rank2)=colnames(Transition.Rank)[which(Transitions.To.Remove==1)]
-  row.names(Transition.Rank2)="Rank"
-  
-  MassErrors2=Transition.Remover(MassErrors,Transitions.To.Remove)
-  
-  sug.matrix2<-Sug.Matrix.FUN(Trans.Classified_filtered,Trans.Vector = Trans.Vector2)
-  
-  
-  GA_TransitionOpt<-ga(type ="binary",
-                       fitness = GA.Fitness,
-                       Norm.Chrom=Norm.Chrom2,
-                       Transition.Area=Transition.Area2,
-                       Transition.Rank=Transition.Rank2,
-                       MassErrors=MassErrors2,
-                       nBits = num_trans2, 
-                       suggestions = sug.matrix2, 
-                       maxiter=10,run=3, 
-                       popSize=ifelse(dim(sug.matrix2)[1]<=20,20,dim(sug.matrix2)[1]),
-                       pcrossover=0.9,
-                       pmutation=0.1,
-                       elitism=0.1, 
-                       keepBest = T,
-                       seed = 112358)
-  
-  
-  GA_1stRunSolution=Trans.Vector2[which(GA_TransitionOpt@solution[1,]==1)]
-  
-  ## {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
-  
-  Trans.Classified2<-Transition.Classifier2(Norm.Chrom = Norm.Chrom2,Transition.Area = Transition.Area2,num_trans = num_trans2,y = GA_TransitionOpt@solution[1,],Transition.Rank = Transition.Rank)
-  
-  Transitions.To.Remove2= data.frame(
-    Trans.Classified2 %>% 
-      select(ID_FragmentIon_charge,Rank.The25quartile.Initial.SimilarityScore,Rank.The25quartile.Initial.Area,Rank) %>%
-      arrange(-Rank.The25quartile.Initial.SimilarityScore,-Rank) %>%
-      select(ID_FragmentIon_charge))[c(0:num.trans.To.Remove.Fun(num_trans2)),]
-  
-  Transitions.To.Remove2=sapply(Trans.Vector2,function(x) ifelse(x %in% Transitions.To.Remove2,0,1))
-  
-  Trans.Classified_filtered2<-Trans.Classified2[Trans.Classified2$ID_FragmentIon_charge %in% names(Transitions.To.Remove2[Transitions.To.Remove2==1]),]
-  
-  Trans.Vector3= names(Transitions.To.Remove2[Transitions.To.Remove2==1])
-  num_trans3=length(Trans.Vector3)
-  
-  
-  #########  New dataset without the worst transitions
-  
-  Norm.Chrom3<-Transition.Remover(Norm.Chrom2,Transitions.To.Remove2)
-  
-  Transition.Area3<-Transition.Remover(Transition.Area2,Transitions.To.Remove2)
-  Transition.Area3=lapply(Transition.Area3,FUN = function(L){ MAX.L=apply(L,1,max,na.rm =T);SUM.L=apply(L,1,sum,na.rm =T); L=cbind(L,Total.To.Max.Ratio=SUM.L/MAX.L)})
-  
-  Transition.Rank3=t(matrix(Transition.Rank2[which(Transitions.To.Remove2==1)]))
-  colnames(Transition.Rank3)=colnames(Transition.Rank2)[which(Transitions.To.Remove2==1)]
-  row.names(Transition.Rank3)="Rank"
-  
-  MassErrors3=Transition.Remover(MassErrors2,Transitions.To.Remove2)
-  
-  sug.matrix3<-Sug.Matrix.FUN(Trans.Classified_filtered2,Trans.Vector = Trans.Vector3)
-  
-  sug.matrix3<-rbind(sug.matrix3,ifelse(Trans.Vector3 %in% GA_1stRunSolution,1,0))
-  
-  GA_TransitionOpt_2<-ga(type ="binary",
+    
+    num_rep=dim(Transition.Area[[1]])[1]-2
+    sug=rep(1,num_trans)
+    Trans.Vector=colnames(Norm.Chrom[[1]])
+    
+    #     Functions
+    
+    Trans.Classified<-Transition.Classifier(Norm.Chrom = Norm.Chrom,Transition.Area = Transition.Area,num_trans = num_trans,Transition.Rank = Transition.Rank)
+    sug.matrix<-Sug.Matrix.FUN(Trans.Classified,Trans.Vector = Trans.Vector)
+    
+    
+    
+    Transitions.To.Remove= data.frame(
+      Trans.Classified %>% 
+        select(ID_FragmentIon_charge,Rank.The25quartile.Initial.SimilarityScore,Rank.The25quartile.Initial.Area,Rank) %>%
+        arrange(-Rank.The25quartile.Initial.SimilarityScore,-Rank) %>%
+        select(ID_FragmentIon_charge))[c(0:num.trans.To.Remove.Fun(num_trans)),]
+    ### Remove transition if the median mass error is higher than the mass error cutoff
+    Transitions_To_Remove_Mass_Error<-data.frame(rbindlist(lapply(MassErrors,FUN = function(L){data.frame(Transitions=colnames(L),SkorMassErrors_IntegratedZone=L[1,])})))
+    
+    Transitions_To_Remove_Mass_Error<-Transitions_To_Remove_Mass_Error %>% group_by(Transitions) %>%
+      summarise(median_error=median(SkorMassErrors_IntegratedZone,na.rm = T)) %>%
+      arrange(-median_error) %>%
+      filter(median_error>=MassError_CutOff) %>%
+      select(Transitions) %>%
+      mutate(Transitions=as.character(Transitions))
+    
+    Transitions.To.Remove<-unique(c(Transitions.To.Remove,Transitions_To_Remove_Mass_Error$Transitions))
+    #
+    
+    
+    Transitions.To.Remove=sapply(Trans.Vector,function(x) ifelse(x %in% Transitions.To.Remove,0,1))
+    
+    
+    
+    
+    Trans.Classified_filtered<-Trans.Classified[Trans.Classified$ID_FragmentIon_charge %in% names(Transitions.To.Remove[Transitions.To.Remove==1]),]
+    Trans.Vector2= names(Transitions.To.Remove[Transitions.To.Remove==1])
+    num_trans2=length(Trans.Vector2)
+    
+    
+    #########  New dataset without the worst transitions
+    
+    Norm.Chrom2<-Transition.Remover(Norm.Chrom,Transitions.To.Remove)
+    
+    Transition.Area2<-Transition.Remover(Transition.Area,Transitions.To.Remove)
+    Transition.Area2=lapply(Transition.Area2,FUN = function(L){ MAX.L=apply(L,1,max,na.rm =T);SUM.L=apply(L,1,sum,na.rm =T); L=cbind(L,Total.To.Max.Ratio=SUM.L/MAX.L)})
+    
+    Transition.Rank2=t(matrix(Transition.Rank[which(Transitions.To.Remove==1)]))
+    colnames(Transition.Rank2)=colnames(Transition.Rank)[which(Transitions.To.Remove==1)]
+    row.names(Transition.Rank2)="Rank"
+    
+    MassErrors2=Transition.Remover(MassErrors,Transitions.To.Remove)
+    
+    sug.matrix2<-Sug.Matrix.FUN(Trans.Classified_filtered,Trans.Vector = Trans.Vector2)
+    
+    
+    GA_TransitionOpt<-ga(type ="binary",
                          fitness = GA.Fitness,
-                         Norm.Chrom=Norm.Chrom3,
-                         Transition.Area=Transition.Area3,
-                         Transition.Rank=Transition.Rank3,
-                         MassErrors=MassErrors3,
-                         nBits = num_trans3, 
-                         suggestions = sug.matrix3, 
-                         maxiter=10,run=5, 
+                         Norm.Chrom=Norm.Chrom2,
+                         Transition.Area=Transition.Area2,
+                         Transition.Rank=Transition.Rank2,
+                         MassErrors=MassErrors2,
+                         nBits = num_trans2, 
+                         suggestions = sug.matrix2, 
+                         maxiter=10,run=3, 
                          popSize=ifelse(dim(sug.matrix2)[1]<=20,20,dim(sug.matrix2)[1]),
                          pcrossover=0.9,
                          pmutation=0.1,
                          elitism=0.1, 
                          keepBest = T,
                          seed = 112358)
-  
-  
-  Report.Replicate.Values<-rbind(Report.Replicate_informedMPRA(Norm.ChromX = Norm.Chrom,Transition.Area=Transition.Area,MassErrorsX = MassErrors,y = rep(1,num_trans), Comment ="a-Initial"),
-                                 Report.Replicate_informedMPRA(Norm.ChromX = Norm.Chrom2,Transition.Area=Transition.Area2,MassErrorsX = MassErrors2,y = rep(1,num_trans2), Comment ="b-After 1st similarity score filter"),
-                                 Report.Replicate_informedMPRA(Norm.ChromX = Norm.Chrom2,Transition.Area=Transition.Area2,MassErrorsX = MassErrors2,y = GA_TransitionOpt@solution[1,], Comment ="c-After 1st GA optimization"),
-                                 Report.Replicate_informedMPRA(Norm.ChromX = Norm.Chrom3,Transition.Area=Transition.Area3,MassErrorsX = MassErrors3,y = rep(1,num_trans3), Comment ="d-After 2nd similarity score filter"),
-                                 Report.Replicate_informedMPRA(Norm.ChromX = Norm.Chrom3,Transition.Area=Transition.Area3,MassErrorsX = MassErrors3,y = GA_TransitionOpt_2@solution[1,],Comment = "e-After 2nd GA optimization"))
-  
-  Report.Transition.Values<-Report.Transition(Chrom.AnalyteX = Chrom.Analyte,Norm.ChromX = Norm.Chrom3,y = GA_TransitionOpt_2@solution[1,])
-  
-  return(list(Report.Transition.Values=Report.Transition.Values,
-              Report.Replicate.Values=Report.Replicate.Values))}
-  }
+    
+    
+    GA_1stRunSolution=Trans.Vector2[which(GA_TransitionOpt@solution[1,]==1)]
+    
+    ## {{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{{}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}
+    
+    Trans.Classified2<-Transition.Classifier2(Norm.Chrom = Norm.Chrom2,Transition.Area = Transition.Area2,num_trans = num_trans2,y = GA_TransitionOpt@solution[1,],Transition.Rank = Transition.Rank)
+    
+    Transitions.To.Remove2= data.frame(
+      Trans.Classified2 %>% 
+        select(ID_FragmentIon_charge,Rank.The25quartile.Initial.SimilarityScore,Rank.The25quartile.Initial.Area,Rank) %>%
+        arrange(-Rank.The25quartile.Initial.SimilarityScore,-Rank) %>%
+        select(ID_FragmentIon_charge))[c(0:num.trans.To.Remove.Fun(num_trans2)),]
+    
+    Transitions.To.Remove2=sapply(Trans.Vector2,function(x) ifelse(x %in% Transitions.To.Remove2,0,1))
+    
+    Trans.Classified_filtered2<-Trans.Classified2[Trans.Classified2$ID_FragmentIon_charge %in% names(Transitions.To.Remove2[Transitions.To.Remove2==1]),]
+    
+    Trans.Vector3= names(Transitions.To.Remove2[Transitions.To.Remove2==1])
+    num_trans3=length(Trans.Vector3)
+    
+    
+    #########  New dataset without the worst transitions
+    
+    Norm.Chrom3<-Transition.Remover(Norm.Chrom2,Transitions.To.Remove2)
+    
+    Transition.Area3<-Transition.Remover(Transition.Area2,Transitions.To.Remove2)
+    Transition.Area3=lapply(Transition.Area3,FUN = function(L){ MAX.L=apply(L,1,max,na.rm =T);SUM.L=apply(L,1,sum,na.rm =T); L=cbind(L,Total.To.Max.Ratio=SUM.L/MAX.L)})
+    
+    Transition.Rank3=t(matrix(Transition.Rank2[which(Transitions.To.Remove2==1)]))
+    colnames(Transition.Rank3)=colnames(Transition.Rank2)[which(Transitions.To.Remove2==1)]
+    row.names(Transition.Rank3)="Rank"
+    
+    MassErrors3=Transition.Remover(MassErrors2,Transitions.To.Remove2)
+    
+    sug.matrix3<-Sug.Matrix.FUN(Trans.Classified_filtered2,Trans.Vector = Trans.Vector3)
+    
+    sug.matrix3<-rbind(sug.matrix3,ifelse(Trans.Vector3 %in% GA_1stRunSolution,1,0))
+    
+    GA_TransitionOpt_2<-ga(type ="binary",
+                           fitness = GA.Fitness,
+                           Norm.Chrom=Norm.Chrom3,
+                           Transition.Area=Transition.Area3,
+                           Transition.Rank=Transition.Rank3,
+                           MassErrors=MassErrors3,
+                           nBits = num_trans3, 
+                           suggestions = sug.matrix3, 
+                           maxiter=10,run=5, 
+                           popSize=ifelse(dim(sug.matrix2)[1]<=20,20,dim(sug.matrix2)[1]),
+                           pcrossover=0.9,
+                           pmutation=0.1,
+                           elitism=0.1, 
+                           keepBest = T,
+                           seed = 112358)
+    
+    
+    Report.Replicate.Values<-rbind(Report.Replicate_informedMPRA(Norm.ChromX = Norm.Chrom,Transition.Area=Transition.Area,MassErrorsX = MassErrors,y = rep(1,num_trans), Comment ="a-Initial"),
+                                   Report.Replicate_informedMPRA(Norm.ChromX = Norm.Chrom2,Transition.Area=Transition.Area2,MassErrorsX = MassErrors2,y = rep(1,num_trans2), Comment ="b-After 1st similarity score filter"),
+                                   Report.Replicate_informedMPRA(Norm.ChromX = Norm.Chrom2,Transition.Area=Transition.Area2,MassErrorsX = MassErrors2,y = GA_TransitionOpt@solution[1,], Comment ="c-After 1st GA optimization"),
+                                   Report.Replicate_informedMPRA(Norm.ChromX = Norm.Chrom3,Transition.Area=Transition.Area3,MassErrorsX = MassErrors3,y = rep(1,num_trans3), Comment ="d-After 2nd similarity score filter"),
+                                   Report.Replicate_informedMPRA(Norm.ChromX = Norm.Chrom3,Transition.Area=Transition.Area3,MassErrorsX = MassErrors3,y = GA_TransitionOpt_2@solution[1,],Comment = "e-After 2nd GA optimization"))
+    
+    Report.Transition.Values<-Report.Transition(Chrom.AnalyteX = Chrom.Analyte,Norm.ChromX = Norm.Chrom3,y = GA_TransitionOpt_2@solution[1,])
+    
+    return(list(Report.Transition.Values=Report.Transition.Values,
+                Report.Replicate.Values=Report.Replicate.Values))}
+}
 
 
 
@@ -1877,7 +1882,7 @@ ChromatogramsSkorPlots<-function(Chrom_Full,MassErrors_Full,TransitionRefinement
       L=L[,which(colnames(L) %in% TransitionRefinementSolution)]})
     Chrom.IsPotentialPeak<-Chromatographic.IsPotentialPeak(Chrom_Full_2_NoiseLimit,MinimalNumberOfConsecutivePoints)
   } else {
-  Chrom.IsPotentialPeak<-Chromatographic.IsPotentialPeak(Chrom_Full_2,MinimalNumberOfConsecutivePoints)}
+    Chrom.IsPotentialPeak<-Chromatographic.IsPotentialPeak(Chrom_Full_2,MinimalNumberOfConsecutivePoints)}
   
   Chrom.DotP<-Chromatographic.DotP(Chrom_Full_2,Chrom.IsPotentialPeak)
   Chrom.MPRA<-Chromatographic.MPRA(Chrom_Full_2,Chrom.IsPotentialPeak)
@@ -1977,8 +1982,8 @@ ChromatogramsSkorPlots<-function(Chrom_Full,MassErrors_Full,TransitionRefinement
     geom_vline(xintercept = as.numeric(as.character(ChromatoScores2[[Num_rep]]$RT_maxSkor)),linetype=2,color="red")+theme(legend.position="top")+
     geom_hline(yintercept = 0,linetype=1,color="grey")+
     geom_hline(yintercept = NoiseLimits[[Num_rep]],linetype=2,color="black")
-    
-    
+  
+  
   # c=ggplot(V[V$score=="Skor_smooth_withMassErrors",],aes(x=as.numeric(as.character(Times)),y=as.numeric(Value)))+
   #   geom_line()+theme_classic()+
   #   geom_vline(xintercept = as.numeric(as.character(ChromatoScores2[[Num_rep]]$left)),linetype=2)+
@@ -2001,7 +2006,7 @@ ChromatogramsSkorPlots<-function(Chrom_Full,MassErrors_Full,TransitionRefinement
   Graph3=grid.arrange(c,b)
   
   
-    
+  
   
   b=ggplot(C[which( C$Transition %in% TransitionRefinementSolution),],aes(x=as.numeric(as.character(Times)),y=as.numeric(Intensity),color=Transition))+
     geom_line()+theme_classic()+
@@ -2462,6 +2467,36 @@ AvantGardeDIA_SkorPlots<-function(index,D){
 ## LaunchAvantGardeInParallel And reading in chunks 
 ## Formatting
 
+#' read_skyline_report_chunk
+#'
+#' This function is read_skyline_report_chunk
+#' @param Defaults
+#' @keywords AvantGardeDIA
+#' @export
+#' @examples
+#' read_skyline_report_chunk()
+read_skyline_report_chunk<-function(csv_file_path,n_rows,skip_rows,column_names){
+  csv_chunk <- read_csv(file =csv_file_path,
+                        n_max = n_rows,
+                        skip = skip_rows,
+                        col_names = column_names,
+                        na= c("#N/A","NA","NaN"),
+                        col_types = cols(
+                          .default = col_character(),
+                          IsDecoy = col_logical(),
+                          PrecursorCharge = col_double(),
+                          PrecursorMz = col_double(),
+                          ProductCharge = col_double(),
+                          ProductMz = col_double(),
+                          Quantitative = col_logical(),
+                          LibraryDotProduct = col_double(),
+                          MinStartTime = col_double(),
+                          MaxEndTime = col_double(),
+                          Area = col_double(),
+                          LibraryIntensity = col_double()))
+  
+  return(csv_chunk)}
+
 #' AvantGardeDIA_InChunks_DB
 #'
 #' This function is AvantGardeDIA_InChunks_DB
@@ -2473,70 +2508,87 @@ AvantGardeDIA_SkorPlots<-function(index,D){
 AvantGardeDIA_InChunks_DB<-function(D.file.name,RefinementWorkflow){
   
   AvG_writeParamsUsed("DB")
+
+  # ColumnNames<-fread(file = D.file.name,header = T,stringsAsFactors = FALSE, na.strings = c("#N/A","NA","NaN"),skip=0,nrows = 1, sep = ",")
   
-  ColumnNames<-fread(file = D.file.name,header = T,stringsAsFactors = FALSE, na.strings = c("#N/A","NA","NaN"),skip=0,nrows = 0)
+  ColumnNames <- read_csv(file =D.file.name,
+                col_names = T,
+                na= c("#N/A","NA","NaN"),
+                n_max = 10)
+  
   ColumnNames<-gsub(names(ColumnNames),pattern = "\\.",replacement = "")
   ColumnNames<-gsub(ColumnNames,pattern = " ",replacement = "")
   
   if(file.exists(paste0("DB_",Name_Tag,".sqlite"))){print(paste0("The SQLite database called: '",paste0("DB_",Name_Tag,".sqlite"),"' already exists in the working directory. Erase it or change the Name_Tag in the parameters file."))} else{
-  db <- dbConnect(SQLite(), dbname=paste0("DB_",Name_Tag,".sqlite"))
-  
-  ID_Analyte_catalog<-list()
-  CurrentSkip<-list()
-  u=1
-  Stop.Condition=FALSE
-  ID_Analyte_Survivors<-list()
-  
-  ### Read in chunks
-  while(Stop.Condition==FALSE){
-    if(u==1){
-      D<-ReadFileInChunks_Format_And_Filter(D.file.name,ColumnNames = ColumnNames,
-                                            PreviousMetaData = NULL,
-                                            Skip = 1,
-                                            is.FirstIteration = T)
+    # db <- dbConnect(SQLite(), dbname=paste0("DB_",Name_Tag,".sqlite"))
+    
+    ID_Analyte_catalog<-list()
+    CurrentSkip<-list()
+    u=1
+    Stop.Condition=FALSE
+    ID_Analyte_Survivors<-list()
+    
+    ### Read in chunks
+    while(Stop.Condition==FALSE){
+      if(u==1){
+        #db <- dbConnect(SQLite(), dbname=paste0("DB_",Name_Tag,".sqlite"))
+        
+        D<-ReadFileInChunks_Format_And_Filter(D.file.name,ColumnNames = ColumnNames,
+                                              PreviousMetaData = NULL,
+                                              Skip = 1,
+                                              is.FirstIteration = T)
+        
+        write.table(x = names(D$Data),file = paste0(MultiFile.path,"/Chrom.Analyte.Names_",Name_Tag,".csv"),quote = F, row.names = F, col.names = T,                  sep = ";")
+        #dbDisconnect(db)
+        
+      } else{
+        #db <- dbConnect(SQLite(), dbname=paste0("DB_",Name_Tag,".sqlite"))
+        
+        D<-ReadFileInChunks_Format_And_Filter(D.file.name,ColumnNames = ColumnNames,
+                                              PreviousMetaData = CurrentMetaData,
+                                              Skip =CurrentSkip[[u-1]],
+                                              is.FirstIteration = F)
+        #dbDisconnect(db)
+        
+      }
       
-      write.table(x = names(D$Data),file = paste0(MultiFile.path,"/Chrom.Analyte.Names_",Name_Tag,".csv"),quote = F, row.names = F, col.names = T,                  sep = ";")
-    } else{
-      D<-ReadFileInChunks_Format_And_Filter(D.file.name,ColumnNames = ColumnNames,
-                                            PreviousMetaData = CurrentMetaData,
-                                            Skip =CurrentSkip[[u-1]],
-                                            is.FirstIteration = F)
+      Stop.Condition=!D$ChunkLastRowNumber==ReadNumberOfLines
+      CurrentMetaData=D$MetaData
+      CurrentSkip[[u]]=D$Skip
+      ID_Analyte_catalog[[u]]=data.frame(u,
+                                         Start_ID_Analyte=unique(D$Data$ID_Analyte)[1],
+                                         End_ID_Analyte=unique(D$Data$ID_Analyte)[length(unique(D$Data$ID_Analyte))])
+      ID_Analyte_Survivors[[u]]<-unique(D$Data$ID_Analyte)
+      db <- dbConnect(SQLite(), dbname=paste0("DB_",Name_Tag,".sqlite"))
+      
+      dbWriteTable(conn = db, name = "MainTable", value = D$Data, row.names = FALSE,append= TRUE)
+      dbDisconnect(db)
+      
+      
+      rm(D)
+      print(u)
+      u=u+1
     }
     
-    Stop.Condition=!D$ChunkLastRowNumber==ReadNumberOfLines
-    CurrentMetaData=D$MetaData
-    CurrentSkip[[u]]=D$Skip
-    ID_Analyte_catalog[[u]]=data.frame(u,
-                                       Start_ID_Analyte=unique(D$Data$ID_Analyte)[1],
-                                       End_ID_Analyte=unique(D$Data$ID_Analyte)[length(unique(D$Data$ID_Analyte))])
-    ID_Analyte_Survivors[[u]]<-unique(D$Data$ID_Analyte)
+    ID_Analyte_Survivors<-unique(do.call(what = c,ID_Analyte_Survivors))
+    CurrentMetaData$M_Analyte$isSurvivor<-ifelse(CurrentMetaData$M_Analyte$ID_Analyte %in% ID_Analyte_Survivors,1,0)
+    ID_Analyte_catalog=data.frame(do.call(rbind,ID_Analyte_catalog))
+    ID_Analyte_catalog[dim(ID_Analyte_catalog)[1],dim(ID_Analyte_catalog)[2]]<-max(CurrentMetaData$M_Analyte$ID_Analyte)
+    #write.table(x = ID_Analyte_catalog,file = paste0(MultiFile.path,"/ID_Analyte_catalog_",Name_Tag,".csv"),quote = F, row.names = F, col.names = T,sep = ";")
+    #saveRDS(CurrentMetaData,file = paste0(MultiFile.path,"/MetaData_",Name_Tag,".RDS"))
     
-    dbWriteTable(conn = db, name = "MainTable", value = D$Data, row.names = FALSE,append= TRUE)
+    db <- dbConnect(SQLite(), dbname=paste0("DB_",Name_Tag,".sqlite"))
+    dbWriteTable(conn = db, name = "MetaData_Analyte", value = CurrentMetaData$M_Analyte, row.names = FALSE,append= TRUE)
+    dbWriteTable(conn = db, name = "MetaData_Replicate", value = CurrentMetaData$M_Replicate, row.names = FALSE,append= TRUE)
+    dbWriteTable(conn = db, name = "MetaData_TransitionsType", value = CurrentMetaData$M_TransitionsType, row.names = FALSE,append= TRUE)
+    dbWriteTable(conn = db, name = "MetaData_Transitions", value = CurrentMetaData$M_Transitions, row.names = FALSE,append= TRUE)
+    dbWriteTable(conn = db, name = "MetaData_PrecursorResults", value = CurrentMetaData$M_PrecursorResult, row.names = FALSE,append= TRUE)
     
+    print("Indexing Database...")
+    dbGetQuery(conn = db,"CREATE INDEX index_Analyte ON MainTable (ID_Analyte)")
     
-    rm(D)
-    print(u)
-    u=u+1
-  }
-  
-  ID_Analyte_Survivors<-unique(do.call(what = c,ID_Analyte_Survivors))
-  CurrentMetaData$M_Analyte$isSurvivor<-ifelse(CurrentMetaData$M_Analyte$ID_Analyte %in% ID_Analyte_Survivors,1,0)
-  ID_Analyte_catalog=data.frame(do.call(rbind,ID_Analyte_catalog))
-  ID_Analyte_catalog[dim(ID_Analyte_catalog)[1],dim(ID_Analyte_catalog)[2]]<-max(CurrentMetaData$M_Analyte$ID_Analyte)
-  #write.table(x = ID_Analyte_catalog,file = paste0(MultiFile.path,"/ID_Analyte_catalog_",Name_Tag,".csv"),quote = F, row.names = F, col.names = T,sep = ";")
-  #saveRDS(CurrentMetaData,file = paste0(MultiFile.path,"/MetaData_",Name_Tag,".RDS"))
-  
-  dbWriteTable(conn = db, name = "MetaData_Analyte", value = CurrentMetaData$M_Analyte, row.names = FALSE,append= TRUE)
-  dbWriteTable(conn = db, name = "MetaData_Replicate", value = CurrentMetaData$M_Replicate, row.names = FALSE,append= TRUE)
-  dbWriteTable(conn = db, name = "MetaData_TransitionsType", value = CurrentMetaData$M_TransitionsType, row.names = FALSE,append= TRUE)
-  dbWriteTable(conn = db, name = "MetaData_Transitions", value = CurrentMetaData$M_Transitions, row.names = FALSE,append= TRUE)
-  dbWriteTable(conn = db, name = "MetaData_PrecursorResults", value = CurrentMetaData$M_PrecursorResult, row.names = FALSE,append= TRUE)
-  
-  print("Indexing Database...")
-  dbGetQuery(conn = db,"CREATE INDEX index_Analyte ON MainTable (ID_Analyte)")
-  
-  dbDisconnect(db)
-  print("Database: Done!")
+    dbDisconnect(db)
+    print("Database: Done!")
   }
 } # Writes in SQLite DB
 
@@ -2568,60 +2620,60 @@ LaunchParallelTasks_ReadFromDB<-function(ParamsFile,RefinementWorkflow){
   I<-foreach(i=X,
              .errorhandling = "remove",
              .export =c('Indexing','Filter_Na_Shared_Or_LowMassTransitions',
-  'MetaDataLibraryConcatenator','ReadFileInChunks_Format_And_Filter',
-  'dot.p','LinearEquationByRange','ScoreTransform.dotP','Rank.filter',
-  'FindTranswithConsecutivePoints','Similarity.Score_informsMPRA','Similarity.Score.Report_informsMPRA',
-  'Similarity.Score.Report.AllTransitions','MPRA.Score.dotp','Library.dotp',
-  'MPRA_y_SpectLib.Fitness','MPRA_y_SpectLib.Report','MPRA_y_SpectLib.Fitness_informed',
-  'MPRA_y_SpectLib.Report_informed','Intensity.Fitness','Intensity.Fitness.Report',
-  'MassError.Score.Fitness_informsMPRA','MassError.Score.Report','Transition.Remover',
-  'Transition.Classifier','Transition.Classifier2','Sug.Matrix.FUN','GA.Fitness',
-  'num.trans.To.Remove.Fun','Report.Replicate_informedMPRA','Report.Transition',
-  'Report.Transition.All','Chromatographic.MPRA',
-  'Chromatographic.DotP',
-  'Chromatographic.IsPotentialPeak','Chromatographic.IntScore','Chromatographic.IntProductScore',
-  'smooth.Criminal',
-  'New_Boundaries','Data.Loader_DB','Run_Transition_Refinment_Tool',
-  'Run_PeakBoundaries_tool','ChromatogramsSkorPlots','Run_Rescoring_Tool',
-  'AvantGardeDIA_GlobalRefinement',
-  'AvantGardeDIA_TransitionRefinementAndReScore','AvantGardeDIA_PeakBoundariesAndReScore',
-  'AvantGardeDIA_ReScore','AvantGardeDIA_InChunks_DB',
-  'AvantGardeDIA_AnalyzeSingleAnalyte','Read_AndFormatResults')) %dopar% {
-      #source(LatestVersion)
-      source(ParamsFile)
-      
-      AvantGardeDIA_AnalyzeSingleAnalyte(i,RefinementWorkflow = RefinementWorkflow)
-      # if(Perform.Optimization==TRUE){
-      #   A<-AvantGardeDIA_GlobalRefinement(i,D)
-      #   
-      #   write.table(A$Results_TransitionRefinementTool$Report.Transition.Values,file=paste0(dir.output,"/Report.Transitions_",Name_Tag,"_",i,".csv"),quote=F,row.names=F,col.names=F,sep=";")
-      #   write.table(A$Results_TransitionRefinementTool$Report.Replicate.Values,file=paste0(dir.output,"/Report.Replicate_",Name_Tag,"_",i,".csv"),quote=F,row.names=F,col.names=F,sep=";")
-      #   write.table(A$Results_PeakBoundaries_tool$New_PeakBoundaries,file=paste0(dir.output,"/Report.PeakBoundaries_",Name_Tag,"_",i,".csv"),quote=F,row.names=F,col.names=F,sep=";")
-      #   write.table(A$Results_ReScore,file=paste0(dir.output,"/Report.ReScore_",Name_Tag,"_",i,".csv"),quote=F,row.names=F,col.names=F,sep=";")
-      #   
-      #   if(!file.exists(paste0(dir.output,"/Report.ColNames",Name_Tag,".csv"))){
-      #     write.table(A$ColNames_Report,file=paste0(dir.output,"/Report.ColNames",Name_Tag,".csv"),quote=F,row.names=F,col.names=F,sep=";")}
-      #   
-      #   rm(A)
-      #   return(i)} else {
-      #     A<-AvantGardeDIA_ReScore(i)
-      #     
-      #     write.table(A$ScoreNonOptimized,file=paste0(dir.output,"/ScoreNonOptimized_",Name_Tag,"_",i,".csv"),quote=F,row.names=F,col.names=F,sep=";")
-      #     
-      #     if(!file.exists(paste0(dir.output,"/Report.ColNames",Name_Tag,".csv"))){
-      #       write.table(A$ColNames_Report,file=paste0(dir.output,"/Report.ColNames",Name_Tag,".csv"),quote=F,row.names=F,col.names=F,sep=";")}
-      #     
-      #     rm(A)
-      #     return(i)
-      #   }
-    dbDisconnect(db)
-    }
-    dbDisconnect(db)
-    
-    stopCluster(cl)
-    print("Parallel: Done!")
-    
-    } ## For cluster Workflow
+                        'MetaDataLibraryConcatenator','ReadFileInChunks_Format_And_Filter','read_skyline_report_chunk',
+                        'dot.p','LinearEquationByRange','ScoreTransform.dotP','Rank.filter',
+                        'FindTranswithConsecutivePoints','Similarity.Score_informsMPRA','Similarity.Score.Report_informsMPRA',
+                        'Similarity.Score.Report.AllTransitions','MPRA.Score.dotp','Library.dotp',
+                        'MPRA_y_SpectLib.Fitness','MPRA_y_SpectLib.Report','MPRA_y_SpectLib.Fitness_informed',
+                        'MPRA_y_SpectLib.Report_informed','Intensity.Fitness','Intensity.Fitness.Report',
+                        'MassError.Score.Fitness_informsMPRA','MassError.Score.Report','Transition.Remover',
+                        'Transition.Classifier','Transition.Classifier2','Sug.Matrix.FUN','GA.Fitness',
+                        'num.trans.To.Remove.Fun','Report.Replicate_informedMPRA','Report.Transition',
+                        'Report.Transition.All','Chromatographic.MPRA',
+                        'Chromatographic.DotP',
+                        'Chromatographic.IsPotentialPeak','Chromatographic.IntScore','Chromatographic.IntProductScore',
+                        'smooth.Criminal',
+                        'New_Boundaries','Data.Loader_DB','Run_Transition_Refinment_Tool',
+                        'Run_PeakBoundaries_tool','ChromatogramsSkorPlots','Run_Rescoring_Tool',
+                        'AvantGardeDIA_GlobalRefinement',
+                        'AvantGardeDIA_TransitionRefinementAndReScore','AvantGardeDIA_PeakBoundariesAndReScore',
+                        'AvantGardeDIA_ReScore','AvantGardeDIA_InChunks_DB',
+                        'AvantGardeDIA_AnalyzeSingleAnalyte','Read_AndFormatResults')) %dopar% {
+                          #source(LatestVersion)
+                          source(ParamsFile)
+                          
+                          AvantGardeDIA_AnalyzeSingleAnalyte(i,RefinementWorkflow = RefinementWorkflow)
+                          # if(Perform.Optimization==TRUE){
+                          #   A<-AvantGardeDIA_GlobalRefinement(i,D)
+                          #   
+                          #   write.table(A$Results_TransitionRefinementTool$Report.Transition.Values,file=paste0(dir.output,"/Report.Transitions_",Name_Tag,"_",i,".csv"),quote=F,row.names=F,col.names=F,sep=";")
+                          #   write.table(A$Results_TransitionRefinementTool$Report.Replicate.Values,file=paste0(dir.output,"/Report.Replicate_",Name_Tag,"_",i,".csv"),quote=F,row.names=F,col.names=F,sep=";")
+                          #   write.table(A$Results_PeakBoundaries_tool$New_PeakBoundaries,file=paste0(dir.output,"/Report.PeakBoundaries_",Name_Tag,"_",i,".csv"),quote=F,row.names=F,col.names=F,sep=";")
+                          #   write.table(A$Results_ReScore,file=paste0(dir.output,"/Report.ReScore_",Name_Tag,"_",i,".csv"),quote=F,row.names=F,col.names=F,sep=";")
+                          #   
+                          #   if(!file.exists(paste0(dir.output,"/Report.ColNames",Name_Tag,".csv"))){
+                          #     write.table(A$ColNames_Report,file=paste0(dir.output,"/Report.ColNames",Name_Tag,".csv"),quote=F,row.names=F,col.names=F,sep=";")}
+                          #   
+                          #   rm(A)
+                          #   return(i)} else {
+                          #     A<-AvantGardeDIA_ReScore(i)
+                          #     
+                          #     write.table(A$ScoreNonOptimized,file=paste0(dir.output,"/ScoreNonOptimized_",Name_Tag,"_",i,".csv"),quote=F,row.names=F,col.names=F,sep=";")
+                          #     
+                          #     if(!file.exists(paste0(dir.output,"/Report.ColNames",Name_Tag,".csv"))){
+                          #       write.table(A$ColNames_Report,file=paste0(dir.output,"/Report.ColNames",Name_Tag,".csv"),quote=F,row.names=F,col.names=F,sep=";")}
+                          #     
+                          #     rm(A)
+                          #     return(i)
+                          #   }
+                          dbDisconnect(db)
+                        }
+  dbDisconnect(db)
+  
+  stopCluster(cl)
+  print("Parallel: Done!")
+  
+} ## For cluster Workflow
 
 #' AvantGardeDIA_AnalyzeSingleAnalyte
 #'
@@ -2643,57 +2695,57 @@ AvantGardeDIA_AnalyzeSingleAnalyte<-function(i,D,RefinementWorkflow){
   require(parallel)
   
   if(RefinementWorkflow=="GlobalRefinement"){
-      A<-AvantGardeDIA_GlobalRefinement(i,D)
-      
-      write.table(A$Results_TransitionRefinementTool$Report.Transition.Values,file=paste0(dir.output,"/Report_GR_Transitions_",Name_Tag,"_",i,".csv"),quote=F,row.names=F,col.names=F,sep=";")
-      write.table(A$Results_TransitionRefinementTool$Report.Replicate.Values,file=paste0(dir.output,"/Report_GR_Replicate_",Name_Tag,"_",i,".csv"),quote=F,row.names=F,col.names=F,sep=";")
-      write.table(A$Results_PeakBoundaries_tool$New_PeakBoundaries,file=paste0(dir.output,"/Report_GR_PeakBoundaries_",Name_Tag,"_",i,".csv"),quote=F,row.names=F,col.names=F,sep=";")
-      write.table(A$Results_ReScore,file=paste0(dir.output,"/Report_GR_ReScore_",Name_Tag,"_",i,".csv"),quote=F,row.names=F,col.names=F,sep=";")
-      
-      if(!file.exists(paste0(dir.output,"/Report_GR_ColNames",Name_Tag,".csv"))){
-        write.table(A$ColNames_Report,file=paste0(dir.output,"/Report_GR_ColNames",Name_Tag,".csv"),quote=F,row.names=F,col.names=F,sep=";")}
-      
-      rm(A)
-      return(i)}
-    if(RefinementWorkflow=="TransitionRefinement"){
-        A<-AvantGardeDIA_TransitionRefinementAndReScore(i,D)
-        
-        write.table(A$Results_TransitionRefinementTool$Report.Transition.Values,file=paste0(dir.output,"/Report_TR_Transitions_",Name_Tag,"_",i,".csv"),quote=F,row.names=F,col.names=F,sep=";")
-        write.table(A$Results_TransitionRefinementTool$Report.Replicate.Values,file=paste0(dir.output,"/Report_TR_Replicate_",Name_Tag,"_",i,".csv"),quote=F,row.names=F,col.names=F,sep=";")
-        write.table(A$Results_ReScore,file=paste0(dir.output,"/Report_TR_ReScore_",Name_Tag,"_",i,".csv"),quote=F,row.names=F,col.names=F,sep=";")
-        
-        if(!file.exists(paste0(dir.output,"/Report_TR_ColNames",Name_Tag,".csv"))){
-          write.table(A$ColNames_Report,file=paste0(dir.output,"/Report_TR_ColNames",Name_Tag,".csv"),quote=F,row.names=F,col.names=F,sep=";")}
-        
-        rm(A)
-        return(i)
-    }
-    if(RefinementWorkflow=="PeakBoundariesRefinement"){
-      A<-AvantGardeDIA_PeakBoundariesAndReScore(i,D)
-      
-      write.table(A$Results_PeakBoundaries_tool$New_PeakBoundaries,file=paste0(dir.output,"/Report_PB_PeakBoundaries_",Name_Tag,"_",i,".csv"),quote=F,row.names=F,col.names=F,sep=";")
-      write.table(A$Results_ReScore,file=paste0(dir.output,"/Report_PB_ReScore_",Name_Tag,"_",i,".csv"),quote=F,row.names=F,col.names=F,sep=";")
-      
-      
-      if(!file.exists(paste0(dir.output,"/Report_PB_ColNames",Name_Tag,".csv"))){
-        write.table(A$ColNames_Report,file=paste0(dir.output,"/Report_PB_ColNames",Name_Tag,".csv"),quote=F,row.names=F,col.names=F,sep=";")}
-      
-      rm(A)
-      return(i)
-    }
-    if(RefinementWorkflow=="OnlyScoring"){
-      A<-AvantGardeDIA_ReScore(i,D)
-      
-      write.table(A$ScoreNonOptimized,file=paste0(dir.output,"/Report_NO_ScoreNonOptimized_",Name_Tag,"_",i,".csv"),quote=F,row.names=F,col.names=F,sep=";")
-      
-      if(!file.exists(paste0(dir.output,"/Report_NO_ColNames",Name_Tag,".csv"))){
-        write.table(A$ColNames_Report,file=paste0(dir.output,"/Report_NO_ColNames",Name_Tag,".csv"),quote=F,row.names=F,col.names=F,sep=";")}
-      
-      rm(A)
-      return(i)
-    }
+    A<-AvantGardeDIA_GlobalRefinement(i,D)
+    
+    write.table(A$Results_TransitionRefinementTool$Report.Transition.Values,file=paste0(dir.output,"/Report_GR_Transitions_",Name_Tag,"_",i,".csv"),quote=F,row.names=F,col.names=F,sep=";")
+    write.table(A$Results_TransitionRefinementTool$Report.Replicate.Values,file=paste0(dir.output,"/Report_GR_Replicate_",Name_Tag,"_",i,".csv"),quote=F,row.names=F,col.names=F,sep=";")
+    write.table(A$Results_PeakBoundaries_tool$New_PeakBoundaries,file=paste0(dir.output,"/Report_GR_PeakBoundaries_",Name_Tag,"_",i,".csv"),quote=F,row.names=F,col.names=F,sep=";")
+    write.table(A$Results_ReScore,file=paste0(dir.output,"/Report_GR_ReScore_",Name_Tag,"_",i,".csv"),quote=F,row.names=F,col.names=F,sep=";")
+    
+    if(!file.exists(paste0(dir.output,"/Report_GR_ColNames",Name_Tag,".csv"))){
+      write.table(A$ColNames_Report,file=paste0(dir.output,"/Report_GR_ColNames",Name_Tag,".csv"),quote=F,row.names=F,col.names=F,sep=";")}
+    
+    rm(A)
+    return(i)}
+  if(RefinementWorkflow=="TransitionRefinement"){
+    A<-AvantGardeDIA_TransitionRefinementAndReScore(i,D)
+    
+    write.table(A$Results_TransitionRefinementTool$Report.Transition.Values,file=paste0(dir.output,"/Report_TR_Transitions_",Name_Tag,"_",i,".csv"),quote=F,row.names=F,col.names=F,sep=";")
+    write.table(A$Results_TransitionRefinementTool$Report.Replicate.Values,file=paste0(dir.output,"/Report_TR_Replicate_",Name_Tag,"_",i,".csv"),quote=F,row.names=F,col.names=F,sep=";")
+    write.table(A$Results_ReScore,file=paste0(dir.output,"/Report_TR_ReScore_",Name_Tag,"_",i,".csv"),quote=F,row.names=F,col.names=F,sep=";")
+    
+    if(!file.exists(paste0(dir.output,"/Report_TR_ColNames",Name_Tag,".csv"))){
+      write.table(A$ColNames_Report,file=paste0(dir.output,"/Report_TR_ColNames",Name_Tag,".csv"),quote=F,row.names=F,col.names=F,sep=";")}
+    
+    rm(A)
+    return(i)
+  }
+  if(RefinementWorkflow=="PeakBoundariesRefinement"){
+    A<-AvantGardeDIA_PeakBoundariesAndReScore(i,D)
+    
+    write.table(A$Results_PeakBoundaries_tool$New_PeakBoundaries,file=paste0(dir.output,"/Report_PB_PeakBoundaries_",Name_Tag,"_",i,".csv"),quote=F,row.names=F,col.names=F,sep=";")
+    write.table(A$Results_ReScore,file=paste0(dir.output,"/Report_PB_ReScore_",Name_Tag,"_",i,".csv"),quote=F,row.names=F,col.names=F,sep=";")
+    
+    
+    if(!file.exists(paste0(dir.output,"/Report_PB_ColNames",Name_Tag,".csv"))){
+      write.table(A$ColNames_Report,file=paste0(dir.output,"/Report_PB_ColNames",Name_Tag,".csv"),quote=F,row.names=F,col.names=F,sep=";")}
+    
+    rm(A)
+    return(i)
+  }
+  if(RefinementWorkflow=="OnlyScoring"){
+    A<-AvantGardeDIA_ReScore(i,D)
+    
+    write.table(A$ScoreNonOptimized,file=paste0(dir.output,"/Report_NO_ScoreNonOptimized_",Name_Tag,"_",i,".csv"),quote=F,row.names=F,col.names=F,sep=";")
+    
+    if(!file.exists(paste0(dir.output,"/Report_NO_ColNames",Name_Tag,".csv"))){
+      write.table(A$ColNames_Report,file=paste0(dir.output,"/Report_NO_ColNames",Name_Tag,".csv"),quote=F,row.names=F,col.names=F,sep=";")}
+    
+    rm(A)
+    return(i)
+  }
   
-  } ## For UGER
+} ## For UGER
 
 ## Read Results
 
@@ -2734,30 +2786,30 @@ Read_AndFormatResults<-function(){
   PBlist<-list.files(dir.output,pattern = paste0("Report_",RefinementTAG,"_PeakBoundaries_"))
   ListFiles_PeakBoundaries<-paste0(dir.output,"/",PBlist)
   if(length(PBlist)>=1){
-        l <- lapply(ListFiles_PeakBoundaries, fread, header = F,sep=';', stringsAsFactors = FALSE)
-        NewPeakBoundaries_All_Results <- rbindlist( l )
-        
-        colnames(NewPeakBoundaries_All_Results)<-strsplit(ColumnNames[3,],split = ";",fixed = T)[[1]]
-        
-        NewPeakBoundaries_All_Results<-NewPeakBoundaries_All_Results %>% 
-          mutate(left=ifelse(is.na(left),"#N/A",left),
-                 right=ifelse(is.na(right),"#N/A",right)) %>% 
-          mutate(ID_Analyte=as.character(ID_Analyte),
-                 ID_Rep=as.character(ID_Rep))%>%
-          left_join(MetaData_Analytes, by = c("ID_Analyte")) %>%
-          left_join(MetaData_Replicate, by = c("ID_Rep"))
-        
-        write.table(NewPeakBoundaries_All_Results,file=paste0(dir.output.results,"/",RefinementTAG,"_NewPeakBoundaries_",Name_Tag,".csv"),quote=F,row.names=F,col.names=T,sep=",")
-        
-        Formatted<-NewPeakBoundaries_All_Results %>%
-          select(FileName,PeptideModifiedSequence,left,right,PrecursorCharge,IsDecoy,IsotopeLabelType) %>%
-          rename(PrecursorIsDecoy=IsDecoy) %>%
-          rename(MinStartTime=left,MaxEndTime=right) %>%
-          distinct()
-  
-        if(UseHeavyPeakBoundariesForLight==TRUE) {Formatted<-Formatted %>% filter(IsotopeLabelType=="heavy")} ##Only for P100
-        
-        write.csv(Formatted,file=paste0(dir.output.results,"/",RefinementTAG,"_NewPeakBoundaries_",Name_Tag,"_Formated.csv"),quote=F,row.names=F)
+    l <- lapply(ListFiles_PeakBoundaries, fread, header = F,sep=';', stringsAsFactors = FALSE)
+    NewPeakBoundaries_All_Results <- rbindlist( l )
+    
+    colnames(NewPeakBoundaries_All_Results)<-strsplit(ColumnNames[3,],split = ";",fixed = T)[[1]]
+    
+    NewPeakBoundaries_All_Results<-NewPeakBoundaries_All_Results %>% 
+      mutate(left=ifelse(is.na(left),"#N/A",left),
+             right=ifelse(is.na(right),"#N/A",right)) %>% 
+      mutate(ID_Analyte=as.character(ID_Analyte),
+             ID_Rep=as.character(ID_Rep))%>%
+      left_join(MetaData_Analytes, by = c("ID_Analyte")) %>%
+      left_join(MetaData_Replicate, by = c("ID_Rep"))
+    
+    write.table(NewPeakBoundaries_All_Results,file=paste0(dir.output.results,"/",RefinementTAG,"_NewPeakBoundaries_",Name_Tag,".csv"),quote=F,row.names=F,col.names=T,sep=",")
+    
+    Formatted<-NewPeakBoundaries_All_Results %>%
+      select(FileName,PeptideModifiedSequence,left,right,PrecursorCharge,IsDecoy,IsotopeLabelType) %>%
+      rename(PrecursorIsDecoy=IsDecoy) %>%
+      rename(MinStartTime=left,MaxEndTime=right) %>%
+      distinct()
+    
+    if(UseHeavyPeakBoundariesForLight==TRUE) {Formatted<-Formatted %>% filter(IsotopeLabelType=="heavy")} ##Only for P100
+    
+    write.csv(Formatted,file=paste0(dir.output.results,"/",RefinementTAG,"_NewPeakBoundaries_",Name_Tag,"_Formated.csv"),quote=F,row.names=F)
   }
   
   ## Report Transitions
@@ -2765,22 +2817,22 @@ Read_AndFormatResults<-function(){
   ListFiles_Transitions<-paste0(dir.output,"/",Translist)
   if(length(Translist)>=1){
     
-          l_trans <- lapply(ListFiles_Transitions, fread, header = F,sep=';', stringsAsFactors = FALSE)
-          NewTransitions_All_Results <- rbindlist( l_trans )
-          colnames(NewTransitions_All_Results)<-strsplit(ColumnNames[1,],split = ";",fixed = T)[[1]]
-          
-          NewTransitions_All_Results<-NewTransitions_All_Results %>% 
-            mutate(ID_Analyte=as.character(ID_Analyte),
-                   ID_Rep=as.character(ID_Rep)) %>%
-            left_join(MetaData_Transitions, by = c("ID_FragmentIon_charge","ID_Analyte", "IsotopeLabelType")) %>%
-            left_join(MetaData_Replicate, by = c("ID_Rep"))
-          
-          write.table(NewTransitions_All_Results,file=paste0(dir.output.results,"/",RefinementTAG,"_NewTransitions_",Name_Tag,".csv"),quote=F,row.names=F,col.names=T,sep=",")
-          
-          
-          NewTransitions_All_Results_OnlyTransitionsInfo<-data.frame(NewTransitions_All_Results %>% select(-Similarity.Score,-ID_Rep) %>%
-                                                                       distinct())
-          write.table(NewTransitions_All_Results_OnlyTransitionsInfo,file=paste0(dir.output.results,"/",RefinementTAG,"_NewTransitions_","OnlyTransitionInfo",Name_Tag,".csv"),quote=F,row.names=F,col.names=T,sep=",")
+    l_trans <- lapply(ListFiles_Transitions, fread, header = F,sep=';', stringsAsFactors = FALSE)
+    NewTransitions_All_Results <- rbindlist( l_trans )
+    colnames(NewTransitions_All_Results)<-strsplit(ColumnNames[1,],split = ";",fixed = T)[[1]]
+    
+    NewTransitions_All_Results<-NewTransitions_All_Results %>% 
+      mutate(ID_Analyte=as.character(ID_Analyte),
+             ID_Rep=as.character(ID_Rep)) %>%
+      left_join(MetaData_Transitions, by = c("ID_FragmentIon_charge","ID_Analyte", "IsotopeLabelType")) %>%
+      left_join(MetaData_Replicate, by = c("ID_Rep"))
+    
+    write.table(NewTransitions_All_Results,file=paste0(dir.output.results,"/",RefinementTAG,"_NewTransitions_",Name_Tag,".csv"),quote=F,row.names=F,col.names=T,sep=",")
+    
+    
+    NewTransitions_All_Results_OnlyTransitionsInfo<-data.frame(NewTransitions_All_Results %>% select(-Similarity.Score,-ID_Rep) %>%
+                                                                 distinct())
+    write.table(NewTransitions_All_Results_OnlyTransitionsInfo,file=paste0(dir.output.results,"/",RefinementTAG,"_NewTransitions_","OnlyTransitionInfo",Name_Tag,".csv"),quote=F,row.names=F,col.names=T,sep=",")
   }   
   
   
@@ -2788,42 +2840,42 @@ Read_AndFormatResults<-function(){
   RepList<-list.files(dir.output,pattern = paste0("Report_",RefinementTAG,"_Replicate_"))
   ListFiles_Replicates<-paste0(dir.output,"/",RepList)
   if(length(RepList)>=1){
-        l_rep <- lapply(ListFiles_Replicates, fread, header = F,sep=';', stringsAsFactors = FALSE)
-        NewReplicates_All_Results <- rbindlist( l_rep )
-        colnames(NewReplicates_All_Results)<-strsplit(ColumnNames[2,],split = ";",fixed = T)[[1]]
-        
-        NewReplicates_All_Results<-NewReplicates_All_Results %>% 
-          mutate(ID_Analyte=as.character(ID_Analyte),
-                 ID_Rep=as.character(ID_Rep)) %>%
-          left_join(MetaData_Analytes, by = c("ID_Analyte")) %>%
-          left_join(MetaData_Replicate, by = c("ID_Rep"))
-        
-        Exponents<-c(9.5,4.5,2.5,0.5)
-        NewReplicates_All_Results<-NewReplicates_All_Results %>%
-          mutate(Skor=Similarity.Score^Exponents[1]*Library.dotp^Exponents[2]*Score.MassError^Exponents[3]*MPRA.Score^Exponents[4])
-        
-        write.table(NewReplicates_All_Results,file=paste0(dir.output.results,"/", RefinementTAG,"_BeforeOpt_Replicates_",Name_Tag,".csv"),quote=F,row.names=F,col.names=T,sep=",")
+    l_rep <- lapply(ListFiles_Replicates, fread, header = F,sep=';', stringsAsFactors = FALSE)
+    NewReplicates_All_Results <- rbindlist( l_rep )
+    colnames(NewReplicates_All_Results)<-strsplit(ColumnNames[2,],split = ";",fixed = T)[[1]]
+    
+    NewReplicates_All_Results<-NewReplicates_All_Results %>% 
+      mutate(ID_Analyte=as.character(ID_Analyte),
+             ID_Rep=as.character(ID_Rep)) %>%
+      left_join(MetaData_Analytes, by = c("ID_Analyte")) %>%
+      left_join(MetaData_Replicate, by = c("ID_Rep"))
+    
+    Exponents<-c(9.5,4.5,2.5,0.5)
+    NewReplicates_All_Results<-NewReplicates_All_Results %>%
+      mutate(Skor=Similarity.Score^Exponents[1]*Library.dotp^Exponents[2]*Score.MassError^Exponents[3]*MPRA.Score^Exponents[4])
+    
+    write.table(NewReplicates_All_Results,file=paste0(dir.output.results,"/", RefinementTAG,"_BeforeOpt_Replicates_",Name_Tag,".csv"),quote=F,row.names=F,col.names=T,sep=",")
   }
   
   ## Report ReScore
   ReScoreList<-list.files(dir.output,pattern = paste0("Report_",RefinementTAG,"_ReScore_"))
   ListFiles_ReScore<-paste0(dir.output,"/",ReScoreList)
   if(length(ReScoreList)>=1){
-        l_reScore <- lapply(ListFiles_ReScore, fread, header = F,sep=';', stringsAsFactors = FALSE)
-        NewReScore_All_Results <- rbindlist(l_reScore)
-        colnames(NewReScore_All_Results)<-strsplit(ColumnNames[2,],split = ";",fixed = T)[[1]]
-        
-        NewReScore_All_Results<-NewReScore_All_Results %>% 
-          mutate(ID_Analyte=as.character(ID_Analyte),
-                 ID_Rep=as.character(ID_Rep)) %>%
-          left_join(MetaData_Analytes, by = c("ID_Analyte")) %>%
-          left_join(MetaData_Replicate, by = c("ID_Rep"))
-        
-        Exponents<-c(9.5,4.5,2.5,0.5)
-        NewReScore_All_Results<- NewReScore_All_Results %>%
-          mutate(Skor=Similarity.Score^Exponents[1]*Library.dotp^Exponents[2]*Score.MassError^Exponents[3]*MPRA.Score^Exponents[4])
-        
-        write.table(NewReScore_All_Results,file=paste0(dir.output.results,"/",RefinementTAG,"_AfterOpt_Replicate_Score_",Name_Tag,".csv"),quote=F,row.names=F,col.names=T,sep=",")
+    l_reScore <- lapply(ListFiles_ReScore, fread, header = F,sep=';', stringsAsFactors = FALSE)
+    NewReScore_All_Results <- rbindlist(l_reScore)
+    colnames(NewReScore_All_Results)<-strsplit(ColumnNames[2,],split = ";",fixed = T)[[1]]
+    
+    NewReScore_All_Results<-NewReScore_All_Results %>% 
+      mutate(ID_Analyte=as.character(ID_Analyte),
+             ID_Rep=as.character(ID_Rep)) %>%
+      left_join(MetaData_Analytes, by = c("ID_Analyte")) %>%
+      left_join(MetaData_Replicate, by = c("ID_Rep"))
+    
+    Exponents<-c(9.5,4.5,2.5,0.5)
+    NewReScore_All_Results<- NewReScore_All_Results %>%
+      mutate(Skor=Similarity.Score^Exponents[1]*Library.dotp^Exponents[2]*Score.MassError^Exponents[3]*MPRA.Score^Exponents[4])
+    
+    write.table(NewReScore_All_Results,file=paste0(dir.output.results,"/",RefinementTAG,"_AfterOpt_Replicate_Score_",Name_Tag,".csv"),quote=F,row.names=F,col.names=T,sep=",")
   }
   
   ## Score Annotation
@@ -2859,91 +2911,160 @@ Read_AndFormatResults<-function(){
              annotation_AvG_SpectralLibSim_Score=Library.dotp,
              annotation_AvG_MassError_Score=Score.MassError,
              annotation_AvG_Score=Skor)
-  
-    write.csv(Annotations_PrecursorResults,file=paste0(dir.output.results,"/",RefinementTAG,"_AnnotationsPrecursorResults_",Name_Tag,".csv"),quote=F,row.names=F)
+    
+    fwrite(Annotations_PrecursorResults,file=paste0(dir.output.results,"/",RefinementTAG,"_AnnotationsPrecursorResults_",Name_Tag,".csv"), sep=",", row.names=F)
   }
   
   ## No Result
   if (RefinementTAG %in% c("TR","PB","GR")) {
-  Extract_Indices_FromFileNames<-function(ListFiles){
-    ListFiles<-gsub(ListFiles,pattern = Name_Tag,replacement = "TAG")
+    Extract_Indices_FromFileNames<-function(ListFiles){
+      ListFiles<-gsub(ListFiles,pattern = Name_Tag,replacement = "TAG")
+      
+      ListFiles<-data.frame(NameFiles=ListFiles) %>%
+        mutate(Index=gsub(
+          substr(NameFiles,start = str_locate(pattern = "TAG_",NameFiles)[2]+4,stop = nchar(as.character(NameFiles))),
+          pattern=".csv",replacement = "")) %>% arrange(as.numeric(Index))
+      
+      #HighestIndex=max(as.numeric(ListFiles$Index),na.rm = T)
+      #setdiff(1:HighestIndex,ListFiles$Index)
+      #length(setdiff(1:HighestIndex,ListFiles$Index))
+      
+      return(ListIndeces<-ListFiles$Index)}
     
-    ListFiles<-data.frame(NameFiles=ListFiles) %>%
-      mutate(Index=gsub(
-        substr(NameFiles,start = str_locate(pattern = "TAG_",NameFiles)[2]+4,stop = nchar(as.character(NameFiles))),
-        pattern=".csv",replacement = "")) %>% arrange(as.numeric(Index))
-    
-    #HighestIndex=max(as.numeric(ListFiles$Index),na.rm = T)
-    #setdiff(1:HighestIndex,ListFiles$Index)
-    #length(setdiff(1:HighestIndex,ListFiles$Index))
-    
-    return(ListIndeces<-ListFiles$Index)}
-  
-  #NoResult<-unique(setdiff(1:max(as.numeric(Extract_Indices_FromFileNames(ListFiles_ReScore))),Extract_Indices_FromFileNames(ListFiles_ReScore)))
-  NoResult<-unique(setdiff(1:max(as.numeric(Extract_Indices_FromFileNames(ReScoreList))),Extract_Indices_FromFileNames(ReScoreList)))
-  NoResult<-MetaData_Analytes %>% filter(ID_Analyte %in% NoResult) %>% select(PeptideModifiedSequence, IsDecoy,ID_Analyte) %>% distinct()
-  write.table(NoResult,file=paste0(dir.output.results,"/",RefinementTAG,"_NoResult_",Name_Tag,".csv"),quote=F,row.names=F,col.names=T,sep=",")
+    #NoResult<-unique(setdiff(1:max(as.numeric(Extract_Indices_FromFileNames(ListFiles_ReScore))),Extract_Indices_FromFileNames(ListFiles_ReScore)))
+    NoResult<-unique(setdiff(1:max(as.numeric(Extract_Indices_FromFileNames(ReScoreList))),Extract_Indices_FromFileNames(ReScoreList)))
+    NoResult<-MetaData_Analytes %>% filter(ID_Analyte %in% NoResult) %>% select(PeptideModifiedSequence, IsDecoy,ID_Analyte) %>% distinct()
+    write.table(NoResult,file=paste0(dir.output.results,"/",RefinementTAG,"_NoResult_",Name_Tag,".csv"),quote=F,row.names=F,col.names=T,sep=",")
   }
   
-
+  
   ## Import Annotations into Skyline
   if (RefinementTAG %in% c("TR","GR")) {
-      NewTransitions_All_Results_OnlyTransitionsInfo_2<-NewTransitions_All_Results_OnlyTransitionsInfo %>% 
-        select(TransitionLocator) %>% mutate(Quantitative="TRUE") %>%
-        #mutate(PrecursorMz=round(PrecursorMz,4),
-        #       ProductMz=round(ProductMz,4)) %>%
-        distinct()
-      
-      A<-MetaData_Transitions %>% 
-        select(TransitionLocator) %>%
-        distinct() %>%
-        #mutate(PrecursorMz=round(PrecursorMz,4),ProductMz=round(ProductMz,4)) %>%
-        left_join(NewTransitions_All_Results_OnlyTransitionsInfo_2, by = c("TransitionLocator")) %>%
-        mutate(Quantitative=ifelse(is.na(Quantitative),"FALSE",Quantitative)) %>%
-        rename(ElementLocator=TransitionLocator)
-      
-      write.csv(A,paste0(dir.output.results,"/",RefinementTAG,"_Transitions_Annotations_",Name_Tag,".csv"),quote = F,row.names = F)
-      
-    }
+    NewTransitions_All_Results_OnlyTransitionsInfo_2<-NewTransitions_All_Results_OnlyTransitionsInfo %>% 
+      select(TransitionLocator) %>% mutate(Quantitative="TRUE") %>%
+      #mutate(PrecursorMz=round(PrecursorMz,4),
+      #       ProductMz=round(ProductMz,4)) %>%
+      distinct()
+    
+    A<-MetaData_Transitions %>% 
+      select(TransitionLocator) %>%
+      distinct() %>%
+      #mutate(PrecursorMz=round(PrecursorMz,4),ProductMz=round(ProductMz,4)) %>%
+      left_join(NewTransitions_All_Results_OnlyTransitionsInfo_2, by = c("TransitionLocator")) %>%
+      mutate(Quantitative=ifelse(is.na(Quantitative),"FALSE",Quantitative)) %>%
+      rename(ElementLocator=TransitionLocator)
+    
+    fwrite(A,paste0(dir.output.results,"/",RefinementTAG,"_Transitions_Annotations_",Name_Tag,".csv"), sep=",", row.names = F)
+    
+  }
   
   ############ Cut_off Peak Boundaries
-  Cut_off_value=ifelse(NonZeroBaselineChromatogram==TRUE,0.61,0.1)
+
+  determine_FDR_AvG <- function(NewReScore_All_Results){
+    
+    NewReScore_All_Results<-NewReScore_All_Results %>% 
+      mutate(IsDecoy=gsub(IsDecoy,pattern = "False",replacement = 0)) %>%
+      mutate(IsDecoy=gsub(IsDecoy,pattern = "True",replacement = 1))
+    
+    Q<-NewReScore_All_Results
+    
+    U<-Q
+    
+    U<-U %>% arrange(-Skor)
+    
+    U<-U %>% arrange(IsDecoy) %>% arrange(-Skor)
+    
+    U2<-data.frame(U$IsDecoy,count=ave(U$IsDecoy==U$IsDecoy,U$IsDecoy, FUN=cumsum))
+    
+    U3<-cbind(U,U2)
+    U3$Num<-1:dim(U3)[1]
+    U4<-U3 %>% mutate(FDR=ifelse(IsDecoy==1,count/Num*100,NA))
+    
+    FDR_1Percent<-as.numeric(U4 %>%  filter(FDR>=1) %>% filter(row_number()==1) %>% select(Skor))
+    
+    U5<-U4 %>% filter(IsDecoy==1)%>%select(Skor,FDR)
+    
+    
+    b1=ggplot(U5,aes(x= Skor,y=FDR))+
+      geom_line(size=1)+
+      geom_vline(xintercept = FDR_1Percent,size=1,linetype=2,color="#FF0000")+
+      geom_hline(yintercept = 1,linetype=2,size=1,color="black")+
+      theme_bw()+scale_x_continuous(limits = c(0,1),breaks = seq(0,1,0.1))+
+      theme(legend.position = "none",axis.text.x=element_text(angle = 45,vjust = 0.05))+
+      annotate("text", x = 0.175,y=15, label = "FDR=1%",color = "#FF0000",angle = 90)+
+      labs(y="FDR (%)",x="AvG score")
+    
+    
+    Z=ggplot(Q,aes(x= Skor,fill=paste0(IsDecoy)))+
+      geom_histogram(binwidth = 0.05,alpha=0.5,position="identity",color="black")+
+      theme_bw()+
+      geom_vline(xintercept = FDR_1Percent,linetype=2,size=1,color="#FF0000")+
+      scale_x_continuous(breaks = seq(0,1,0.1))+
+      scale_fill_manual(values = c("#5BBCD6", "#FF0000"))+
+      theme(legend.position = "none", axis.text.x=element_text(angle = 45,vjust = 0.05))+
+      annotate("text", size=3, x = 0.175,y=5000, label = "FDR=1%",color = "#FF0000",angle = 90)+
+      theme_classic()+theme(legend.position = "none", axis.text.x=element_text(angle = 45,vjust = 0.05))+
+      labs(y="Count",x="AvG score") 
+    
+    
+    FDR_estimation <- grid.arrange(
+      Z+labs(y="Number of peptides")+theme_bw()+
+        theme(#axis.text.y = element_blank(),
+          #axis.ticks.y = element_blank(),
+          legend.position = "none",
+          axis.text.x=element_text(angle = 45,vjust = 0.05)),
+      
+      b1+theme_bw()+
+        theme(legend.position = "none", axis.text.x=element_text(angle = 45,vjust = 0.05)),
+      ncol=1)
+    
+    ggsave(FDR_estimation,
+           filename = paste0(dir.output.results,"/",RefinementTAG,"_FDR_plot_",Name_Tag,".pdf"),
+           width = 6,height =9)
+    
+    return(FDR_1Percent=FDR_1Percent)}
+
+  Cut_off_value = ifelse(length(unique(MetaData_Analytes$IsDecoy))>1,
+                       determine_FDR_AvG(NewReScore_All_Results),
+                       ifelse(NonZeroBaselineChromatogram==TRUE,0.61,0.1))
+
+  cut_off_tag = gsub(paste0(ifelse(length(unique(MetaData_Analytes$IsDecoy))>1,
+                       "FDR_Below1Percent_cutoffAvGScore_",
+                       "Fixed_cutoffAvGScore_"), round(Cut_off_value,3)),pattern = "\\.",replacement = "pt")
   
   if (RefinementTAG %in% c("PB","GR")) {
-        PeakBoundaries_Final<-NewReScore_All_Results%>% 
-        filter(as.numeric(Library.dotp)>=0.7,
-               as.numeric(Similarity.Score)>=0.85,
-               as.numeric(Score.MassError)>=0.7,
-               as.numeric(MPRA.Score)>=0.9,
-               as.numeric(Skor)>=Cut_off_value) #%>% 
-      #mutate(Concentration= substr(FileName,start=str_locate(FileName,pattern = "P100_")+5,stop = str_locate(FileName,"ng_")-1))
-      
-      Num_Of_ValidReplicate_per_Peptide<-PeakBoundaries_Final %>%
-        group_by(ID_Analyte,IsotopeLabelType,Comment,ProteinName,PeptideModifiedSequence, PrecursorCharge,IsDecoy) %>%
-        summarise(n=n()) %>% ungroup() %>% rename(Num_Replicates=n)
-      
-      PeakBoundaries_Final<-PeakBoundaries_Final %>% left_join(Num_Of_ValidReplicate_per_Peptide,by = c("ID_Analyte", "IsotopeLabelType", "Comment", "ProteinName", "PeptideModifiedSequence", "PrecursorCharge", "IsDecoy")) %>%
-        select(ID_Rep,ID_Analyte,IsotopeLabelType,FileName,ProteinName,PeptideModifiedSequence,PrecursorCharge,IsDecoy,Num_Replicates) %>%
-        #filter(Num_Replicates>=12) %>%
-        distinct() %>% 
-        mutate(Keep="Keep")
-      
-      
-      W<-NewPeakBoundaries_All_Results %>% left_join(PeakBoundaries_Final, by = c("ID_Rep", "ID_Analyte", "IsotopeLabelType", "FileName", "ProteinName", "PeptideModifiedSequence","PrecursorCharge", "IsDecoy")) %>% 
-        mutate(left2=ifelse(Keep=="Keep",left,NA),right2=ifelse(Keep=="Keep",right,NA)) %>%
-        mutate(left=left2,right=right2) %>% select(-left2,-right2) %>%
-        mutate(left=ifelse(is.na(left),"#N/A",left),
-               right=ifelse(is.na(right),"#N/A",right))
-      
-      Formatted_Filtered<-W %>%
-        select(FileName,PeptideModifiedSequence,left,right,PrecursorCharge,IsDecoy,IsotopeLabelType) %>%
-        rename(PrecursorIsDecoy=IsDecoy) %>%
-        rename(MinStartTime=left,MaxEndTime=right) %>%
-        distinct()
-      
-      if(UseHeavyPeakBoundariesForLight==TRUE) {Formatted_Filtered<-Formatted_Filtered %>% filter(IsotopeLabelType=="heavy")} ##Only for P100
-      
-      write.csv(Formatted_Filtered,file=paste0(dir.output.results,"/",RefinementTAG,"_NewPeakBoundaries_",Name_Tag,"_Formatted_Filtered.csv"),quote=F,row.names=F)}
+    PeakBoundaries_Final<-NewReScore_All_Results%>% 
+      filter(as.numeric(Library.dotp)>=0.7,
+             as.numeric(Similarity.Score)>=0.85,
+             as.numeric(Score.MassError)>=0.7,
+             as.numeric(MPRA.Score)>=0.9,
+             as.numeric(Skor)>=Cut_off_value)
+    
+    Num_Of_ValidReplicate_per_Peptide<-PeakBoundaries_Final %>%
+      group_by(ID_Analyte,IsotopeLabelType,Comment,ProteinName,PeptideModifiedSequence, PrecursorCharge,IsDecoy) %>%
+      summarise(n=n()) %>% ungroup() %>% rename(Num_Replicates=n)
+    
+    PeakBoundaries_Final<-PeakBoundaries_Final %>% left_join(Num_Of_ValidReplicate_per_Peptide,by = c("ID_Analyte", "IsotopeLabelType", "Comment", "ProteinName", "PeptideModifiedSequence", "PrecursorCharge", "IsDecoy")) %>%
+      select(ID_Rep,ID_Analyte,IsotopeLabelType,FileName,ProteinName,PeptideModifiedSequence,PrecursorCharge,IsDecoy,Num_Replicates) %>%
+      distinct() %>% 
+      mutate(Keep="Keep")
+    
+    
+    W<-NewPeakBoundaries_All_Results %>% left_join(PeakBoundaries_Final, by = c("ID_Rep", "ID_Analyte", "IsotopeLabelType", "FileName", "ProteinName", "PeptideModifiedSequence","PrecursorCharge", "IsDecoy")) %>% 
+      mutate(left2=ifelse(Keep=="Keep",left,NA),right2=ifelse(Keep=="Keep",right,NA)) %>%
+      mutate(left=left2,right=right2) %>% select(-left2,-right2) %>%
+      mutate(left=ifelse(is.na(left),"#N/A",left),
+             right=ifelse(is.na(right),"#N/A",right))
+    
+    Formatted_Filtered<-W %>%
+      select(FileName,PeptideModifiedSequence,left,right,PrecursorCharge,IsDecoy,IsotopeLabelType) %>%
+      rename(PrecursorIsDecoy=IsDecoy) %>%
+      rename(MinStartTime=left,MaxEndTime=right) %>%
+      distinct()
+    
+    if(UseHeavyPeakBoundariesForLight==TRUE) {Formatted_Filtered<-Formatted_Filtered %>% filter(IsotopeLabelType=="heavy")} ##Only for P100
+    
+    write.csv(Formatted_Filtered,file=paste0(dir.output.results,"/",RefinementTAG,"_NewPeakBoundaries_",Name_Tag,"_Formatted_Filtered_",cut_off_tag,".csv"),quote=F,row.names=F)}
   
   ## Only Scoring / No optimization
   NoOptimizationList<-list.files(dir.output,pattern = paste0("Report_",RefinementTAG,"_ScoreNonOptimized_"))
@@ -3004,4 +3125,5 @@ AvantGardeDIA_DB<-function(D.file.name,RefinementWorkflow,ParamsFile){
   Read_AndFormatResults()
   print("AvantGardeDIA_DB: Done! Have a nice day!")
 }
+
 

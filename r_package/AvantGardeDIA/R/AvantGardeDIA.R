@@ -1110,9 +1110,12 @@ Report.Transition<-function(Chrom.AnalyteX,Norm.ChromX,y){
     mutate(Rep=substr(Rep,stop = str_locate(Rep,pattern = "\\.")-1,start = 5),
            Analyte=substr(Analyte,stop = str_locate(Analyte,pattern = "\\.")-1,start = 9),
            IsotopeLabelType=substr(IsotopeLabelType,stop = str_locate(IsotopeLabelType,pattern = "\\.")-1,start = 18)) %>%
-    rename(ID_Rep=Rep, ID_Analyte=Analyte) %>% mutate(ID_Rep=as.numeric(ID_Rep),ID_Analyte=as.numeric(ID_Analyte))
+    rename(ID_Rep=Rep, ID_Analyte=Analyte) %>%
+    #mutate(ID_Rep=as.numeric(ID_Rep),ID_Analyte=as.numeric(ID_Analyte)) %>%
+    mutate(ID_Rep = as.character(ID_Rep),ID_Analyte=as.character(ID_Analyte))
   Y<-Chrom.AnalyteX %>% select(ID_Rep,ID_Analyte,IsotopeLabelType) %>%
-    distinct()
+    distinct()%>%
+    mutate(ID_Rep = as.character(ID_Rep),ID_Analyte=as.character(ID_Analyte))
   H<-H %>%left_join(Y, by = c("ID_Rep","ID_Analyte","IsotopeLabelType"))
   return(H)
 }
@@ -1380,15 +1383,75 @@ New_Boundaries<-function(L,RowNum_at_max_Skor,Intensity_at_max_Skor){
 #' @examples
 #' Data.Loader_DB(index = 1)
 Data.Loader_DB<-function(index,D){
+  library(digest)
+
+  hash_value <- function(x){
+    x = as.character(x)
+    return(substr(digest(x, algo = "sha256", serialize = F),start = 0,stop = 8))
+  }
+  hash_value_vectorized <- function(u){
+    v = NULL
+    for(i in (1:length(u))){
+      y = hash_value(u[i])
+      # print(y)
+      v[i]= y
+    }
+    v
+  }
+  
+  create_hash_indices <- function(dt){
+    
+    dt2 <- dt %>%
+      mutate(IsDecoy = as.logical(IsDecoy)) %>%
+      mutate(ID_FragmentIon_charge2 = hash_value_vectorized(paste(FragmentIon,ProductCharge, sep = "_")),
+             ID_Analyte2 = hash_value_vectorized(paste0(ProteinName,"_",PeptideModifiedSequence,"_",PrecursorCharge,str_to_title(IsDecoy))),
+             ID_Rep2 = hash_value_vectorized(FileName))
+    
+    ID_glossary <- dt2 %>%
+      mutate(ID_Analyte3 = paste0(ProteinName,"_",PeptideModifiedSequence,"_",PrecursorCharge,str_to_title(IsDecoy))) %>%
+      select(ID_FragmentIon_charge,ID_Rep, ID_Analyte, ID_FragmentIon_charge2, ID_Rep2, ID_Analyte2) %>% data.frame()%>%
+      distinct() %>%
+      rename(ID_FragmentIon_charge= ID_FragmentIon_charge2,
+             ID_Rep=ID_Rep2,
+             ID_Analyte=ID_Analyte2,
+             ID_FragmentIon_charge2= ID_FragmentIon_charge,
+             ID_Rep2=ID_Rep,
+             ID_Analyte2=ID_Analyte)
+    
+    cols.num <- c("ID_FragmentIon_charge","ID_Rep", "ID_Analyte", "ID_FragmentIon_charge2", "ID_Rep2", "ID_Analyte2")
+    ID_glossary[cols.num] <- sapply(ID_glossary[cols.num],as.character)
+    
+    dt2 <- dt2 %>%
+      select(-ID_FragmentIon_charge,-ID_Rep, -ID_Analyte) %>%
+      rename(ID_FragmentIon_charge= ID_FragmentIon_charge2,
+             ID_Rep=ID_Rep2,
+             ID_Analyte=ID_Analyte2)
+    
+    return(list(reindexed_data = dt2, Indices_glossary = ID_glossary))
+  }
+  
   # Loading the data
   
   db <- dbConnect(SQLite(), dbname=paste0("DB_",Name_Tag,".sqlite"))
   
-  Chrom.Analyte =  dbGetQuery(db,paste0("select * from MainTable where ID_Analyte = ", index))
+  Chrom.Analyte =  dbGetQuery(db,paste0("select * from MainTable where ID_Analyte = ", index)) #%>%
+    # arrange(FileName, TransitionLocator, ProductMz, ProductCharge)
   
   dbDisconnect(db)
   
-  
+  reindexing <- create_hash_indices(Chrom.Analyte)
+  Chrom.Analyte <- reindexing$reindexed_data %>%
+    arrange(ID_FragmentIon_charge, ID_Rep , ID_Analyte) %>%
+    select(ProteinName,PeptideModifiedSequence,ModifiedSequence,IsotopeLabelType,IsDecoy,
+           PrecursorCharge,PrecursorMz,ProductCharge,ProductMz,FragmentIon,
+           TransitionLocator,Quantitative,FileName,LibraryDotProduct,MinStartTime,
+           MaxEndTime,Area,LibraryIntensity,InterpolatedTimes,InterpolatedIntensities,
+           InterpolatedMassErrors,PrecursorResultLocator,ID_FragmentIon_charge,ID_Rep,ID_Analyte) %>%
+    mutate(LibraryDotProduct  = round(LibraryDotProduct ,4),
+           MinStartTime   = round(MinStartTime  ,2),
+           MaxEndTime  = round(MaxEndTime ,2),
+           Area  = round(Area ,0))
+
   ### Boundaries
   Boundaries<-tapply(paste(Chrom.Analyte$ID_FragmentIon_charge,Chrom.Analyte$MinStartTime,Chrom.Analyte$MaxEndTime,Chrom.Analyte$InterpolatedTimes,sep=','), paste0("Rep_",Chrom.Analyte$ID_Rep," Analyte_",Chrom.Analyte$ID_Analyte," IsotopeLabelType_",Chrom.Analyte$IsotopeLabelType), function(x){
     m=strsplit(x, ',') %>% unlist() %>% gsub(pattern=' *', replacement='') %>% matrix(nrow=length(x), byrow=T)
@@ -1540,6 +1603,83 @@ Data.Loader_DB<-function(index,D){
   for(i in 1:length(names(Chrom_Full))){
     Chrom_Full[[i]]=rbind(MPRA.MeanArea[[1]],Transition.Lib.Intensity,Chrom_Full[[i]])
   }
+  
+  ID_Analyte_indices = reindexing$Indices_glossary %>% select(ID_Analyte,ID_Analyte2) %>% distinct()
+  ID_Rep_indices = reindexing$Indices_glossary %>% select(ID_Rep,ID_Rep2 ) %>% distinct()
+  ID_FragmentIon_charge_indices = reindexing$Indices_glossary %>% select(ID_FragmentIon_charge,ID_FragmentIon_charge2) %>% distinct()
+  
+
+    
+  replace_name_on_list <- function(l){
+    names_list <- names(l)
+    for (i in 1:length(ID_Rep_indices$ID_Rep)) {
+      index1 = ID_Rep_indices$ID_Rep[i]
+      index2 = ID_Rep_indices$ID_Rep2[i]
+      
+      names_list = gsub(names_list,pattern = index1, replacement = index2)
+      
+    }
+    names_list = gsub(names_list,pattern = ID_Analyte_indices$ID_Analyte[1], replacement = ID_Analyte_indices$ID_Analyte2[1])
+    names(l) <- names_list
+    
+    return(l)
+  }
+  replace_names_on_datamatrix <- function(dt){
+    names_dt <- colnames(dt)
+    for (i in 1:length(ID_FragmentIon_charge_indices$ID_FragmentIon_charge)) {
+      index1 = ID_FragmentIon_charge_indices$ID_FragmentIon_charge[i]
+      index2 = ID_FragmentIon_charge_indices$ID_FragmentIon_charge2[i]
+      
+      names_dt = gsub(names_dt,pattern = index1, replacement = index2)
+    }
+    colnames(dt) <- names_dt
+    return(dt)
+  }
+  replace_names_on_datamatrix_for_each_element_on_list<-function(l){
+    lapply(l , replace_names_on_datamatrix)
+  }
+  replace_rownames_on_datamatrix <- function(dt){
+    rownames_dt <- row.names(dt)
+    for (i in 1:length(ID_Rep_indices$ID_Rep)) {
+      index1 = ID_Rep_indices$ID_Rep[i]
+      index2 = ID_Rep_indices$ID_Rep2[i]
+      
+      rownames_dt = gsub(rownames_dt,pattern = index1, replacement = index2)
+    }
+    row.names(dt) <- rownames_dt
+    return(dt)
+  }
+  replace_ROW_names_on_datamatrix_for_each_element_on_list<-function(l){
+    lapply(l , replace_rownames_on_datamatrix)
+  }
+    
+  Chrom.Analyte <- Chrom.Analyte %>%
+    left_join(ID_FragmentIon_charge_indices) %>%
+    left_join(ID_Analyte_indices)%>%
+    left_join(ID_Rep_indices)%>%
+    select(-ID_FragmentIon_charge,-ID_Rep, -ID_Analyte) %>% data.frame()%>%
+    distinct() %>%
+    rename(ID_FragmentIon_charge= ID_FragmentIon_charge2,
+           ID_Rep=ID_Rep2,
+           ID_Analyte=ID_Analyte2)
+  Boundaries <- replace_name_on_list(Boundaries)
+  Chrom_Full <- replace_name_on_list(Chrom_Full) %>%
+    replace_names_on_datamatrix_for_each_element_on_list
+  Chrom <- replace_name_on_list(Chrom) %>%
+    replace_names_on_datamatrix_for_each_element_on_list
+  Norm.Chrom <- replace_name_on_list(Norm.Chrom) %>%
+    replace_names_on_datamatrix_for_each_element_on_list
+  MassErrors_Full <- replace_name_on_list(MassErrors_Full) %>%
+    replace_names_on_datamatrix_for_each_element_on_list
+  MassErrors <- replace_name_on_list(MassErrors) %>%
+    replace_names_on_datamatrix_for_each_element_on_list
+  
+  Transition.Area <- replace_name_on_list(Transition.Area) %>%
+    replace_names_on_datamatrix_for_each_element_on_list %>%
+    replace_ROW_names_on_datamatrix_for_each_element_on_list
+  
+  Transition.Rank <- replace_names_on_datamatrix(Transition.Rank)
+  
   
   return(list(Chrom.Analyte=Chrom.Analyte,
               Boundaries=Boundaries,
